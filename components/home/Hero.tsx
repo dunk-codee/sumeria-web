@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useSyncExternalStore } from "react";
 import { button } from "@/components/ui";
+import { LOGO_X } from "@/components/XMark";
 import { cx } from "@/lib/format";
 
 /*
@@ -17,10 +18,7 @@ const EASE_OUT = [0.2, 0.7, 0.2, 1] as const;
 const EASE_STROKE = [0.6, 0, 0.2, 1] as const;
 const EASE_WIPE = [0.7, 0, 0.3, 1] as const;
 
-/** Trazos de la X del logo (viewBox 0 0 420 434). */
-const X_LONG = "M38 52 C 110 98 175 150 215 215 C 255 280 300 350 378 390";
-const X_TOP = "M298 128 C 330 102 352 75 382 38";
-const X_BOTTOM = "M128 302 C 95 335 65 368 42 402";
+const { long: X_LONG, top: X_TOP, bottom: X_BOTTOM } = LOGO_X;
 
 /*
  * Con prefers-reduced-motion se fuerza el estado final por CSS, así no se ve
@@ -96,7 +94,8 @@ export function Hero({ salonFrom, address }: { salonFrom: string; address: strin
       />
 
       <div className="relative mx-auto flex w-full max-w-[1280px] flex-col gap-[22px] px-gutter pt-[calc(56px+40px)] pb-[clamp(28px,4vw,52px)]">
-        <h1 aria-label="Sumeria Sushi" className="m-0 flex w-[min(100%,760px)] items-center gap-[2.4%]">
+        {/* data-hero-logo: el header muestra su logo recién cuando este sale de la vista. */}
+        <h1 data-hero-logo aria-label="Sumeria Sushi" className="m-0 flex w-[min(100%,760px)] items-center gap-[2.4%]">
           <svg
             viewBox="0 0 420 434"
             fill="none"

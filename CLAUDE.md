@@ -212,6 +212,32 @@ pará `npm run dev` antes de correr `db:seed` o `next build`. Para hacer el buil
   - `/admin/login` y el panel muestran "Falta conectar la base de datos".
   En desarrollo nunca entra en este modo (usa PGlite). **Para activar todo**: crear Neon, `db:migrate` + `db:seed` contra Neon,
   cargar `DATABASE_URL`, `ADMIN_*` y `AUTH_SECRET` en Vercel y redeployar (en ese orden: el build prerenderiza leyendo la base).
+- **Header** (`components/site/SiteHeader.tsx`, cliente, vive en el layout así que no se remonta al navegar):
+  - Botón del pedido (`CartButton`): **sello hanko**. "Pedido" en texto limpio (sin caja) + la cantidad dentro de un cuadradito
+    `sumeria-dark`, inclinado −6°, con filete interior blanco (`ring-inset`) como los sellos japoneses; al pasar el mouse se endereza.
+    Cada vez que cambia la cantidad el sello "golpea" (entra a escala 1,8 y girado, spring seco). Sin ítems: contorno punteado gris con "0".
+    El sello vive en un contenedor fijo de 26 px, así el texto no se mueve. El `aria-label` siempre dice la cantidad.
+    Ojo: en Tailwind 4 `rotate-*` usa la propiedad CSS `rotate`, que se **suma** al `transform` de framer-motion; la inclinación en
+    reposo va por clase y motion solo anima el giro extra del golpe (termina en 0).
+    (Historial: antes fue píldora con ícono de bolsa y después de maki; el cliente las encontró genéricas.)
+  - Sección activa (`NavX`): la X roja se dibuja trazo por trazo (largo, después los dos cortos), igual que en el hero pero en ≈ 0,5 s.
+    **Los textos de la nav nunca se mueven**: en desktop la X es absoluta a la izquierda del texto (dentro del espacio de 30 px entre
+    secciones); en el menú mobile cada sección tiene un hueco fijo de 18 px donde aparece. Con `prefers-reduced-motion` aparece sin animar.
+  - Logo (`HeaderLogo`, igual en mobile y desktop): la X es SVG (`LOGO_X` en `components/XMark.tsx`, compartida con el hero) y
+    "SUMERIA SU SHI" es el PNG recortado (desde x 150 de 1187). **En el inicio** está oculto mientras el logo grande del hero
+    (`[data-hero-logo]`) está a la vista (`useLogoVisible`, IntersectionObserver con el alto del header); al pasarlo entra dibujando
+    la X y barriendo el texto. Con el menú mobile abierto se muestra siempre. En el resto de las páginas se ve siempre, sin animación
+    de entrada en la primera carga. El link conserva su ancho (146 px) aunque el logo esté oculto, para que la nav no se corra.
+    Al pasar el mouse (o con foco de teclado) la X gira 180° y frena, como el loader.
+    (Historial: un tiempo el logo mobile fue fijo y sin animación; el cliente pidió volver a esta lógica también en mobile.)
+  - Botón del menú mobile (`MenuIcon`): sin texto; dos trazos redondeados (largo arriba, corto abajo, alineados a la derecha) que al
+    abrir se cruzan en una X roja (spring). El `aria-label` dice "Abrir menú" / "Cerrar menú".
+  - Menú mobile (`MobileMenu`): al abrir baja como una cortina desde el header (`clip-path`) y las secciones suben escalonadas
+    (50 ms entre cada una), después el bloque de contacto; al cerrar la cortina sube. Con `prefers-reduced-motion` aparece y se va sin animar.
+- **Carrito** (`CartDrawer`): abre y cierra animado con `AnimatePresence`. El fondo se oscurece (0,35 s) y el panel se desliza
+  (0,5 s, curva `EASE_SHEET`): en **desktop entra desde la derecha**, en **mobile sube como hoja desde abajo** (`useIsDesktop`, mismo
+  corte de 900 px que `d:`). Al cerrar sale por el mismo lado, más rápido (0,3 s). Con `prefers-reduced-motion` no se desliza.
+  El botón de cerrar es una cruz simple de trazo fino, sin fondo (**no** el motivo X de la marca).
 - **Auth**: `proxy.ts` redirige a `/admin/login` sin sesión (chequeo optimista); `requireAdmin()` revalida en cada página y acción.
 
 ---
@@ -222,7 +248,9 @@ pará `npm run dev` antes de correr `db:seed` o `next build`. Para hacer el buil
   Los combinados con varios tamaños son un producto por tamaño. El PDF no marca sin TACC: se marca desde el panel.
 - **Manual de marca > prototipo**: rojo "Naranja salmón" `#D75B4B` (`sumeria`); rellenos con texto blanco en `sumeria-dark` `#BF4636`
   por contraste. La X imita el símbolo del logo (trazo en S + dos cortos).
-- **Tipografías**: el manual pide Grafik Poster RND y Granat (licencia paga, no las tenemos). Se usan las del prototipo.
+- **Tipografías**: el manual pide Grafik Poster RND y Granat (licencia paga, no las tenemos). Se usan las del prototipo, que
+  coinciden con el README (verificado 27/10/2026): Oswald (`font-display`), Instrument Sans (`font-sans`), IBM Plex Mono (`font-mono`),
+  Mrs Saint Delafield (`font-script`). Extra: Jost 300 (`font-jost`), solo para el "SU SHI" del logo en el hero.
   Para cambiarlas: `next/font/local` en `app/layout.tsx` manteniendo las variables `--font-oswald`, `--font-instrument`, etc.
 - Los rótulos "Foto · …" del prototipo no se muestran en producción; sin foto queda el fondo placeholder.
 - Agregados al modelo del handoff: `categories.visible/featured`, `events.event_date/when_label/cta_label/cta_target`,
@@ -240,6 +268,15 @@ con drag y flechas, datos del local), APIs, migraciones, seed con la carta real.
 `typecheck`, `lint` y `build` pasan.
 
 **Deploy actual**: Vercel en **modo sin base** (sin Neon todavía): carta y pedidos por WhatsApp funcionan; reservas online y panel, no.
+
+**Infra (27/10/2026)**: base Neon creada y conectada. Migraciones aplicadas (`db:migrate`) y datos ya cargados
+(7 categorías, 69 productos, 8 mesas, 3 zonas, 1 fila de settings; sin novedades ni reservas). `.env.local` tiene `DATABASE_URL`,
+`ADMIN_EMAIL` y `AUTH_SECRET`. En Vercel están `DATABASE_URL` y `ADMIN_EMAIL`.
+`ADMIN_PASSWORD` es **provisoria** (débil, a propósito, hasta el lanzamiento oficial): **cambiarla por una fuerte
+(≥ 14 caracteres) en Vercel y en `.env.local` antes de lanzar**, y redeployar. No escribir nunca la clave en este archivo (repo público).
+Pendiente: `AUTH_SECRET` propio de producción en Vercel (confirmar), redeploy.
+**Cloudinary se deja para después**: sin credenciales las fotos salen de `public/menu/`. Al configurarlo hay que subir las fotos
+desde el panel, porque `db:seed` no pisa datos existentes (solo con `-- --force`, que borra y recarga).
 
 
 ## 8. Próximos pasos (en orden sugerido)

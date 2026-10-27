@@ -6,6 +6,13 @@ import { cx } from "@/lib/format";
  */
 export const X_PATHS = ["M4.6 5.2C8.6 7.4 11 10.2 13 13.2S16.6 18.4 19.2 19", "M15.6 9.6L19 5.4", "M5 18.9L8.4 14.8"];
 
+/** Trazos de la X del logo, calcados de `sumeria-logo.png` (viewBox 0 0 420 434, trazo 74): hero y header. */
+export const LOGO_X = {
+  long: "M38 52 C 110 98 175 150 215 215 C 255 280 300 350 378 390",
+  top: "M298 128 C 330 102 352 75 382 38",
+  bottom: "M128 302 C 95 335 65 368 42 402",
+};
+
 export function XMark({
   size = 10,
   className,

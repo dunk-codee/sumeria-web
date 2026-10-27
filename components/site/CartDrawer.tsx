@@ -1,8 +1,9 @@
 "use client";
 
+import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { cx, money, piecesLabel } from "@/lib/format";
 import { button } from "../ui";
 import { XMark } from "../XMark";
@@ -11,11 +12,31 @@ import { useSite } from "./SiteProvider";
 const field =
   "rounded-xs border bg-ink px-3 text-[15px] text-bone outline-none placeholder:text-stone-4 focus:border-bone";
 
+/** Curva de hoja que se desliza: arranca rápido y se asienta suave. */
+const EASE_SHEET = [0.32, 0.72, 0, 1] as const;
+
+// Desktop (≥ 900 px, breakpoint `d:`): el carrito entra desde la derecha; mobile: sube como hoja desde abajo.
+// El carrito solo se abre después de hidratar, así que el valor del servidor no llega a usarse.
+const DESKTOP = "(min-width: 900px)";
+const subscribeDesktop = (cb: () => void) => {
+  const mq = window.matchMedia(DESKTOP);
+  mq.addEventListener("change", cb);
+  return () => mq.removeEventListener("change", cb);
+};
+const useIsDesktop = () =>
+  useSyncExternalStore(
+    subscribeDesktop,
+    () => window.matchMedia(DESKTOP).matches,
+    () => false,
+  );
+
 export function CartDrawer() {
   const s = useSite();
   const [tried, setTried] = useState(false);
   const [notesOpen, setNotesOpen] = useState<Record<number, boolean>>({});
   const closeRef = useRef<HTMLButtonElement>(null);
+  const desktop = useIsDesktop();
+  const hidden = desktop ? { x: "100%" } : { y: "100%" };
 
   useEffect(() => {
     if (!s.cartOpen) return;
@@ -27,8 +48,6 @@ export function CartDrawer() {
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [s.cartOpen]);
-
-  if (!s.cartOpen) return null;
 
   const missName = !s.name.trim();
   const missAddr = s.mode === "delivery" && !s.address.trim();
@@ -44,14 +63,32 @@ export function CartDrawer() {
     window.open(s.orderUrl, "_blank", "noopener");
   };
 
+  // Al abrir: el fondo se oscurece y el panel se desliza; al cerrar, lo mismo al revés (más rápido).
   return (
-    <>
-      <div onClick={s.closeCart} className="fixed inset-0 z-50 bg-black/65" aria-hidden />
-      <aside
+    <AnimatePresence>
+      {s.cartOpen && (
+        <motion.div
+          key="cart-backdrop"
+          onClick={s.closeCart}
+          className="fixed inset-0 z-50 bg-black/65"
+          aria-hidden
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0, transition: { duration: 0.25 } }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+        />
+      )}
+      {s.cartOpen && (
+      <motion.aside
+        key="cart-panel"
         role="dialog"
         aria-modal="true"
         aria-labelledby="cart-title"
         className="fixed top-12 right-0 bottom-0 z-[51] flex w-full flex-col overflow-hidden rounded-t-2xl border-l border-bone/12 bg-[#12100E] d:top-0 d:w-[460px] d:rounded-none"
+        initial={hidden}
+        animate={{ x: 0, y: 0 }}
+        exit={{ ...hidden, transition: { duration: 0.3, ease: [0.4, 0, 1, 1] } }}
+        transition={{ duration: 0.5, ease: EASE_SHEET }}
       >
         <div className="flex items-center justify-between gap-3 border-b border-bone/12 px-5 py-[18px]">
           <div className="flex items-baseline gap-2.5">
@@ -60,8 +97,17 @@ export function CartDrawer() {
             </h2>
             <span className="font-mono text-[11px] text-stone-3">{s.count === 1 ? "1 ítem" : `${s.count} ítems`}</span>
           </div>
-          <button ref={closeRef} type="button" onClick={s.closeCart} aria-label="Cerrar" className="flex h-11 w-11 items-center justify-center">
-            <XMark size={16} stroke={3.2} className="text-bone" />
+          {/* Cruz simple de cierre, sin fondo (no es el motivo X de la marca). */}
+          <button
+            ref={closeRef}
+            type="button"
+            onClick={s.closeCart}
+            aria-label="Cerrar"
+            className="-mr-2.5 flex h-11 w-11 items-center justify-center text-stone-2 transition-colors hover:text-bone"
+          >
+            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" aria-hidden>
+              <path d="M5 5l14 14M19 5L5 19" />
+            </svg>
           </button>
         </div>
 
@@ -249,8 +295,9 @@ export function CartDrawer() {
             </div>
           </>
         )}
-      </aside>
-    </>
+      </motion.aside>
+      )}
+    </AnimatePresence>
   );
 }
 

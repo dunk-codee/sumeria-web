@@ -21,7 +21,7 @@ const script = Mrs_Saint_Delafield({ variable: "--font-script", subsets: ["latin
 const jost = Jost({ variable: "--font-jost", subsets: ["latin"], weight: "300" });
 
 export const metadata: Metadata = {
-  title: { default: "Sumeria Sushi · Concepción del Uruguay", template: "%s · Sumeria Sushi" },
+  title: { default: "Sumeria Sushi", template: "%s · Sumeria Sushi" },
   description:
     "Sushi, rolls, ensaladas y bagels en 25 de Mayo 181, Concepción del Uruguay. Pedí por WhatsApp con delivery o take away, o reservá tu mesa.",
   openGraph: { siteName: "Sumeria Sushi", locale: "es_AR", type: "website" },
