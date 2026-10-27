@@ -21,26 +21,26 @@ Nunca con cuentas personales.
 Antes de cada commit/push verificá:
 
 ```bash
-git config user.name     # tiene que decir: dunk-codee
-git config user.email    # tiene que decir: dunk.codee@gmail.com
-gh auth status           # la cuenta ACTIVA tiene que ser dunk-codee
+git config user.name      # tiene que decir: dunk-codee
+git config user.email     # tiene que decir: dunk.codee@gmail.com
+git remote get-url origin # tiene que decir: https://dunk-codee@github.com/dunk-codee/sumeria-web.git
 ```
 
-Si algo no coincide:
+El usuario `dunk-codee@` en la URL del remoto hace que Git Credential Manager use siempre esa cuenta para el push,
+aunque haya otras cuentas guardadas en la máquina. Si algo no coincide:
 
 ```bash
 git config user.name "dunk-codee"
 git config user.email "dunk.codee@gmail.com"
-gh auth login                 # si dunk-codee no está logueada en gh
-gh auth switch -u dunk-codee  # si está logueada pero no es la activa
-gh auth setup-git             # para que git push use la credencial de gh
+git remote set-url origin https://dunk-codee@github.com/dunk-codee/sumeria-web.git
+git credential-manager github list   # dunk-codee tiene que aparecer; si no: git credential-manager github login
 ```
 
-> En la máquina donde se armó el proyecto, `gh` tenía activa otra cuenta (`DelValleMateo`).
-> **Cambiala a `dunk-codee` antes del primer push.**
-
-- Remoto: `https://github.com/dunk-codee/sumeria-web.git` (**público**: nunca subas credenciales ni material privado del cliente).
-- Rama principal: `main`. Si la local se llama `master`, renombrala antes del primer push: `git branch -M main`.
+- **No uses `gh auth setup-git`**: hace que git use la cuenta activa de `gh`, que puede no ser `dunk-codee`.
+  Si usás `gh` para PRs, verificá antes con `gh auth status` que la cuenta activa sea `dunk-codee` (`gh auth switch -u dunk-codee`).
+- Después de pushear, confirmá en GitHub que el commit figura con autor `dunk-codee`.
+- Remoto: `https://github.com/dunk-codee/sumeria-web`  (**público**: nunca subas credenciales ni material privado del cliente).
+- Rama principal: `main`.
 - Trabajá en ramas (`feat/...`, `fix/...`) y abrí PR contra `main`. No hagas force-push a `main`.
 - Mensajes de commit en español, en imperativo y concretos: `Agrega límite de reservas por IP`, `Corrige total del carrito con envío`.
 - Nunca commitees `.env*` (salvo `.env.example`), `.data/` ni `node_modules/`.
