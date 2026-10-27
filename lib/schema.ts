@@ -70,6 +70,12 @@ export const settings = pgTable("settings", {
   city: text("city").notNull(),
   instagram: text("instagram").notNull(),
   hours: jsonb("hours").$type<HoursRow[]>().notNull(),
+  /** Primer día reservable desde el sitio (ISO). Sin valor: desde hoy. */
+  bookingFrom: date("booking_from", { mode: "string" }),
+  /** Último día reservable desde el sitio (ISO). Sin valor: hoy + 7 días. */
+  bookingTo: date("booking_to", { mode: "string" }),
+  /** Días puntuales sin reservas online dentro del rango (feriados, cierres). */
+  blockedDates: jsonb("blocked_dates").$type<string[]>().notNull().default([]),
 });
 
 export const EVENT_TYPES = ["evento", "promo", "sorteo", "novedad"] as const;
@@ -138,12 +144,18 @@ export const reservations = pgTable(
   {
     id: serial("id").primaryKey(),
     date: date("date", { mode: "string" }).notNull(),
+    /** Hoy hay un único turno (siempre 0). Se conserva por las reservas y el índice existentes. */
     turn: integer("turn").notNull(),
     time: text("time").notNull(),
     name: text("name").notNull(),
     phone: text("phone").notNull().default(""),
     people: integer("people").notNull(),
     tableN: integer("table_n").notNull(),
+    /**
+     * Reservas de mesas combinadas: una fila por mesa, todas con el mismo `group_id`.
+     * El índice único por mesa sigue bloqueando cada una. Null = reserva de una sola mesa.
+     */
+    groupId: text("group_id"),
     status: text("status").$type<ResStatus>().notNull().default("pend"),
     source: text("source").$type<ResSource>().notNull().default("web"),
     note: text("note").notNull().default(""),
@@ -155,6 +167,7 @@ export const reservations = pgTable(
       .on(t.date, t.turn, t.tableN)
       .where(sql`${t.status} <> 'canc'`),
     index("reservations_date_idx").on(t.date, t.turn),
+    index("reservations_group_idx").on(t.groupId),
   ],
 );
 

@@ -1,5 +1,6 @@
 import { and, asc, eq, gte, lte } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
+import { DEFAULT_BOOKING, type BookingConfig } from "./booking";
 import { todayISO } from "./dates";
 import { dbConfigured, getDb } from "./db";
 import { DEFAULT_SETTINGS } from "./defaults";
@@ -75,6 +76,8 @@ export type SiteSettings = {
   instagram: string;
   hours: HoursRow[];
   zones: { id: number; name: string; description: string; price: number }[];
+  /** Días reservables desde el sitio (rango y días bloqueados). */
+  booking: BookingConfig;
 };
 
 
@@ -94,6 +97,7 @@ export async function getSettings(): Promise<SiteSettings> {
     instagram: base.instagram,
     hours: base.hours,
     zones: zones.map((z) => ({ id: z.id, name: z.name, description: z.description, price: z.price })),
+    booking: row ? { from: row.bookingFrom, to: row.bookingTo, blocked: row.blockedDates } : DEFAULT_BOOKING,
   };
 }
 

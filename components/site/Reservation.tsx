@@ -3,29 +3,34 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { PlanData } from "@/lib/data";
-import { DOW, longDate, MON, nextDays, parts, shortDate, todayISO } from "@/lib/dates";
-import { cx, plural } from "@/lib/format";
-import { BOOKING_DAYS, MAX_PEOPLE, TURNS, turnOf } from "@/lib/turns";
-import { waLink } from "@/lib/whatsapp";
+import { bookingDays, isPastCutoff, type BookingConfig } from "@/lib/booking";
+import type { Combo } from "@/lib/combos";
+import { DOW, longDate, MON, parts, shortDate, todayISO } from "@/lib/dates";
+import { cx, plural, tablesLabel } from "@/lib/format";
+import { MAX_PEOPLE, SAME_DAY_CUTOFF, TURN } from "@/lib/turns";
+import { sameDayConsultMessage, waLink } from "@/lib/whatsapp";
 import { FloorPlan, type PlanTable } from "../FloorPlan";
 import { button } from "../ui";
 import { RedX, XLoader, XMark } from "../XMark";
-import { SITE_TABLE, SITE_TABLE_ARIA, type SiteTableKind } from "./tableStyles";
+import { SITE_CHAIR, SITE_TABLE, SITE_TABLE_ARIA, type SiteTableKind } from "./tableStyles";
 
 type Status = "free" | "pend" | "res";
-type LastRes = { table: string; name: string; date: string; turn: string; people: number };
+type LastRes = { table: string; name: string; date: string; people: number };
+type Availability = { date: string; tables: { n: number; status: Status }[]; combos: Combo[]; cutoff: boolean };
 
 const field = "rounded-xs border bg-coal px-3.5 text-base text-bone outline-none placeholder:text-stone-4 focus:border-bone";
 const h3 = "m-0 font-display text-xl font-medium tracking-[.08em] uppercase";
 
-export function Reservation({ plan, whatsapp }: { plan: PlanData; whatsapp: string }) {
+export function Reservation({ plan, whatsapp, booking }: { plan: PlanData; whatsapp: string; booking: BookingConfig }) {
   const [today, setToday] = useState<string | null>(null);
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [date, setDate] = useState<string>("");
-  const [turn, setTurn] = useState<0 | 1>(1);
   const [people, setPeople] = useState(2);
-  const [table, setTable] = useState<number | null>(null);
-  const [statuses, setStatuses] = useState<Record<number, Status> | null>(null);
+  /** Mesa elegida, o varias si se eligió una combinación. */
+  const [selection, setSelection] = useState<number[]>([]);
+  const [avail, setAvail] = useState<Availability | null>(null);
+  const [nowMs, setNowMs] = useState(0);
+  const [cutoffDate, setCutoffDate] = useState<string | null>(null);
   const [loadErr, setLoadErr] = useState(false);
   const [reload, setReload] = useState(0);
   const [name, setName] = useState("");
@@ -36,57 +41,69 @@ export function Reservation({ plan, whatsapp }: { plan: PlanData; whatsapp: stri
   const [sendErr, setSendErr] = useState<string | null>(null);
   const [last, setLast] = useState<LastRes | null>(null);
 
-  // "Hoy" se calcula en el navegador (hora argentina), no en el prerender.
+  // "Hoy" y la hora se calculan en el navegador (hora argentina), no en el prerender.
   useEffect(() => {
-    const t = todayISO();
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- fecha del cliente
+    const now = new Date();
+    const t = todayISO(now);
+    const open = bookingDays(booking, t).filter((d) => !d.blocked);
+    const first = open.find((d) => !isPastCutoff(d.date, now)) ?? open[0];
+    /* eslint-disable react-hooks/set-state-in-effect -- fecha del cliente */
     setToday(t);
-    setDate(t);
-  }, []);
+    setNowMs(now.getTime());
+    setDate(first?.date ?? "");
+    /* eslint-enable react-hooks/set-state-in-effect */
+    // El corte de las 19:30 puede llegar mientras la persona completa el formulario.
+    const id = setInterval(() => setNowMs(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, [booking]);
 
   useEffect(() => {
     if (!date) return;
     const ctrl = new AbortController();
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reinicia el estado al cambiar la consulta
     setLoadErr(false);
-    fetch(`/api/availability?date=${date}&turn=${turn}&people=${people}`, { signal: ctrl.signal, cache: "no-store" })
+    fetch(`/api/availability?date=${date}&people=${people}`, { signal: ctrl.signal, cache: "no-store" })
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
-      .then((d: { tables: { n: number; status: Status }[] }) => setStatuses(Object.fromEntries(d.tables.map((t) => [t.n, t.status]))))
+      .then((d: Availability) => setAvail(d))
       .catch((e) => {
         if (e?.name !== "AbortError") setLoadErr(true);
       });
     return () => ctrl.abort();
-  }, [date, turn, people, reload]);
+  }, [date, people, reload]);
 
-  const dates = useMemo(() => (today ? nextDays(today, BOOKING_DAYS) : []), [today]);
-  const tableInfo = (n: number) => plan.tables.find((t) => t.n === n);
-  const selT = table != null ? tableInfo(table) : undefined;
+  const dates = useMemo(() => (today ? bookingDays(booking, today) : []), [booking, today]);
+  const statuses = useMemo(() => (avail ? Object.fromEntries(avail.tables.map((t) => [t.n, t.status])) : null), [avail]);
+  const combos = avail?.combos ?? [];
+  const selTables = selection.map((n) => plan.tables.find((t) => t.n === n)).filter((t) => t != null);
+  const selCap = selTables.reduce((a, t) => a + t.capacity, 0);
+  const selLabel = tablesLabel(selection);
+  // Corte de hoy: lo calcula el cliente con la hora argentina y lo confirma el servidor.
+  const cutoff = Boolean(date) && (isPastCutoff(date, new Date(nowMs)) || (avail?.date === date && avail.cutoff) || cutoffDate === date);
 
   const kinds = useMemo(() => {
     const out: Record<number, { kind: SiteTableKind; status: Status; selectable: boolean }> = {};
     for (const t of plan.tables) {
       const st: Status = statuses?.[t.n] ?? "free";
       const fits = t.capacity >= people;
-      const selectable = statuses != null && st === "free" && fits;
-      const kind: SiteTableKind = table === t.n ? "sel" : st === "free" ? (fits ? "free" : "small") : st;
+      const selectable = statuses != null && !cutoff && st === "free" && fits;
+      const kind: SiteTableKind = selection.includes(t.n) ? "sel" : st === "free" ? (fits ? "free" : "small") : st;
       out[t.n] = { kind, status: st, selectable };
     }
     return out;
-  }, [plan.tables, statuses, people, table]);
+  }, [plan.tables, statuses, people, selection, cutoff]);
 
   const freeT = plan.tables.filter((t) => kinds[t.n]?.status === "free");
   const fitN = plan.tables.filter((t) => kinds[t.n]?.selectable).length;
-  const noFree = statuses != null && fitN === 0;
-  const turnObj = turnOf(turn);
+  const noFree = statuses != null && !cutoff && fitN === 0 && combos.length === 0;
 
   const changeQuery = (patch: () => void) => {
     patch();
-    setTable(null);
+    setSelection([]);
   };
 
   const pick = (n: number, advance: boolean) => {
     if (!kinds[n]?.selectable) return;
-    setTable(n);
+    setSelection([n]);
     if (advance) setStep(2);
   };
 
@@ -99,6 +116,9 @@ export function Reservation({ plan, whatsapp }: { plan: PlanData; whatsapp: stri
         ...t,
         round: t.shape === "round",
         className: SITE_TABLE[k.kind],
+        chair: SITE_CHAIR[k.kind],
+        capacity: t.capacity,
+        grouped: k.kind === "sel" && selection.length > 1,
         disabled: !k.selectable && k.kind !== "sel",
         aria: `Mesa ${t.n}, ${t.capacity} personas, ${SITE_TABLE_ARIA[k.kind]}`,
         onClick: () => pick(t.n, advance),
@@ -135,12 +155,13 @@ export function Reservation({ plan, whatsapp }: { plan: PlanData; whatsapp: stri
     { kind: "free", mark: "4", label: "Disponible", desc: "Tocala para elegirla" },
     { kind: "sel", mark: "✓", label: "Tu elección", desc: "La mesa que elegiste" },
     { kind: "pend", mark: "PEND", label: "Pendiente de confirmar", desc: "Alguien la pidió y la estamos confirmando" },
-    { kind: "res", mark: "OCUP", label: "Reservada u ocupada", desc: "No disponible en este turno" },
+    { kind: "res", mark: "OCUP", label: "Reservada u ocupada", desc: "No disponible ese día" },
     { kind: "small", mark: "2", label: "Libre, pero chica", desc: `No alcanza para ${people} ${plural(people, "persona", "personas")}` },
   ];
 
   const submit = async () => {
-    if (!name.trim() || phone.replace(/\D/g, "").length < 7 || !selT) {
+    if (cutoff) return;
+    if (!name.trim() || phone.replace(/\D/g, "").length < 7 || selTables.length === 0) {
       setTried(true);
       return;
     }
@@ -150,11 +171,16 @@ export function Reservation({ plan, whatsapp }: { plan: PlanData; whatsapp: stri
       const res = await fetch("/api/reservations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date, turn, people, tableN: selT.n, name: name.trim(), phone: phone.trim(), comment: comment.trim() }),
+        body: JSON.stringify({ date, people, tables: selection, name: name.trim(), phone: phone.trim(), comment: comment.trim() }),
       });
       const data = await res.json().catch(() => ({}));
+      if (res.status === 422 && data.code === "cutoff") {
+        setCutoffDate(date);
+        setSendErr(null);
+        return;
+      }
       if (res.status === 409) {
-        setTable(null);
+        setSelection([]);
         setStep(2);
         setReload((r) => r + 1);
         setSendErr(data.error ?? "Esa mesa ya fue tomada. Elegí otra.");
@@ -164,9 +190,9 @@ export function Reservation({ plan, whatsapp }: { plan: PlanData; whatsapp: stri
         setSendErr(data.error ?? "No pudimos enviar la reserva. Probá de nuevo.");
         return;
       }
-      setLast({ table: `Mesa ${selT.n}`, name: name.trim(), date: longDate(date), turn: `${turnObj.name} · ${turnObj.range}`, people });
+      setLast({ table: selLabel, name: name.trim(), date: longDate(date), people });
       setStep(4);
-      setTable(null);
+      setSelection([]);
       setTried(false);
       setReload((r) => r + 1);
       window.scrollTo({ top: 0 });
@@ -187,7 +213,22 @@ export function Reservation({ plan, whatsapp }: { plan: PlanData; whatsapp: stri
 
   const nameErr = tried && !name.trim();
   const phoneErr = tried && phone.replace(/\D/g, "").length < 7;
-  const summary = `${shortDate(date)} · ${turnObj.name} · ${people} ${plural(people, "persona", "personas")}`;
+  const summary = `${shortDate(date)} · ${people} ${plural(people, "persona", "personas")}`;
+  const consultHref = waLink(whatsapp, sameDayConsultMessage(people, name));
+  const cutoffNotice = cutoff && (
+    <div className="flex flex-col gap-3 rounded-xs border-[1.5px] border-sumeria bg-[#1A0F0E] p-[22px]" role="alert">
+      <div className="flex items-center gap-2.5">
+        <XMark size={16} stroke={4} className="text-sumeria" />
+        <h3 className="m-0 font-display text-2xl leading-[1.05] font-semibold uppercase">Las reservas online para hoy ya cerraron</h3>
+      </div>
+      <p className="m-0 text-[15px] leading-normal text-sand">
+        Desde las {SAME_DAY_CUTOFF} no tomamos reservas por la web para el mismo día. Escribinos por WhatsApp y te decimos si queda una mesa libre.
+      </p>
+      <a href={consultHref} target="_blank" rel="noopener noreferrer" className={cx(button({ variant: "primary" }), "self-start")}>
+        Consultar para hoy por WhatsApp
+      </a>
+    </div>
+  );
   const goStep = (n: 1 | 2 | 3) => {
     setStep(n);
     setSendErr(null);
@@ -235,20 +276,22 @@ export function Reservation({ plan, whatsapp }: { plan: PlanData; whatsapp: stri
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div className="flex flex-col gap-1.5">
                 <span className="font-mono text-[10.5px] tracking-[.05em] text-stone-3 uppercase">
-                  Disponibilidad · {shortDate(date)} · {turnObj.name}
+                  Disponibilidad · {shortDate(date)}
                 </span>
                 <span className="font-display text-[clamp(22px,2.4vw,30px)] leading-[1.05] font-semibold uppercase">
                   {statuses == null
                     ? "Buscando mesas…"
                     : freeT.length
                       ? `${freeT.length} ${plural(freeT.length, "mesa libre", "mesas libres")} · ${freeT.reduce((a, t) => a + t.capacity, 0)} lugares`
-                      : "Sin mesas libres en este turno"}
+                      : "Sin mesas libres este día"}
                 </span>
                 {statuses != null && (
                   <span className="text-sm text-stone-2">
                     {fitN
-                      ? `${fitN} ${plural(fitN, "sirve", "sirven")} para ${people} ${plural(people, "persona", "personas")}. Cambiá día, turno o personas abajo y el plano se actualiza.`
-                      : `Ninguna alcanza para ${people} ${plural(people, "persona", "personas")}. Probá otro turno u otro día.`}
+                      ? `${fitN} ${plural(fitN, "sirve", "sirven")} para ${people} ${plural(people, "persona", "personas")}. Cambiá día o personas abajo y el plano se actualiza.`
+                      : combos.length
+                        ? `Ninguna mesa sola alcanza para ${people} ${plural(people, "persona", "personas")}, pero podés combinar mesas en el próximo paso.`
+                        : `Ninguna alcanza para ${people} ${plural(people, "persona", "personas")}. Probá otro día.`}
                   </span>
                 )}
               </div>
@@ -263,8 +306,17 @@ export function Reservation({ plan, whatsapp }: { plan: PlanData; whatsapp: stri
           <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,340px),1fr))] items-start gap-[clamp(28px,4vw,56px)]">
             <div className="col-span-full flex flex-col gap-3">
               <h3 className={h3}>¿Qué día?</h3>
+              {dates.length === 0 && (
+                <span className="text-[15px] text-sand">
+                  Por ahora no hay días abiertos para reservar online.{" "}
+                  <a href={waLink(whatsapp, "¡Hola Sumeria! Quiero reservar una mesa.")} target="_blank" rel="noopener noreferrer" className="underline">
+                    Escribinos por WhatsApp
+                  </a>
+                  .
+                </span>
+              )}
               <div className="no-scrollbar flex gap-2 overflow-x-auto pb-0.5">
-                {dates.map((d, i) => {
+                {dates.map(({ date: d, blocked }) => {
                   const on = d === date;
                   const p = parts(d);
                   return (
@@ -272,43 +324,33 @@ export function Reservation({ plan, whatsapp }: { plan: PlanData; whatsapp: stri
                       key={d}
                       type="button"
                       aria-pressed={on}
-                      aria-label={longDate(d)}
+                      disabled={blocked}
+                      aria-label={`${longDate(d)}${blocked ? ", sin reservas online" : ""}`}
                       onClick={() => changeQuery(() => setDate(d))}
                       className={cx(
                         "flex w-[72px] flex-none flex-col items-center gap-[3px] rounded-xs border pt-2.5 pb-3",
-                        on ? "border-sumeria-dark bg-sumeria-dark text-white" : "border-bone/18 bg-coal text-bone",
+                        blocked
+                          ? "cursor-not-allowed border-dashed border-bone/18 bg-transparent text-stone-4"
+                          : on
+                            ? "border-sumeria-dark bg-sumeria-dark text-white"
+                            : "border-bone/18 bg-coal text-bone",
                       )}
                     >
-                      <span className="font-mono text-[10px] tracking-[.06em]">{i === 0 ? "HOY" : DOW[p.dow]}</span>
-                      <span className="font-display text-[30px] leading-none font-semibold">{p.day}</span>
-                      <span className="font-mono text-[10px]">{MON[p.month]}</span>
+                      <span className="font-mono text-[10px] tracking-[.06em]">{d === today ? "HOY" : DOW[p.dow]}</span>
+                      <span className={cx("font-display text-[30px] leading-none font-semibold", blocked && "line-through")}>{p.day}</span>
+                      <span className="font-mono text-[10px]">{blocked ? "CERRADO" : MON[p.month]}</span>
                     </button>
                   );
                 })}
               </div>
             </div>
             <div className="flex flex-col gap-3">
-              <h3 className={h3}>¿En qué turno?</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {TURNS.map((t) => {
-                  const on = t.id === turn;
-                  return (
-                    <button
-                      key={t.id}
-                      type="button"
-                      aria-pressed={on}
-                      onClick={() => changeQuery(() => setTurn(t.id))}
-                      className={cx("flex flex-col gap-1.5 rounded-xs border-[1.5px] bg-coal p-4 text-left", on ? "border-sumeria" : "border-bone/18")}
-                    >
-                      <span className="flex items-center gap-2 font-display text-lg font-semibold uppercase">
-                        {on && <RedX size={10} stroke={4} />}
-                        {t.name}
-                      </span>
-                      <span className="font-mono text-xs text-stone-2">{t.range}</span>
-                    </button>
-                  );
-                })}
+              <h3 className={h3}>Horario</h3>
+              <div className="flex flex-col gap-1.5 rounded-xs border-[1.5px] border-bone/18 bg-coal p-4">
+                <span className="font-display text-lg font-semibold uppercase">Turno único</span>
+                <span className="font-mono text-xs text-stone-2">{TURN.range}</span>
               </div>
+              <span className="text-[13px] text-stone-3">Tu mesa queda guardada durante todo el servicio.</span>
             </div>
             <div className="flex flex-col gap-3">
               <h3 className={h3}>¿Cuántos son?</h3>
@@ -342,8 +384,14 @@ export function Reservation({ plan, whatsapp }: { plan: PlanData; whatsapp: stri
                 .
               </span>
             </div>
+            {cutoffNotice && <div className="col-span-full">{cutoffNotice}</div>}
             <div className="col-span-full">
-              <button type="button" onClick={() => goStep(2)} className={cx(button({ variant: "primary" }), "w-full max-w-[340px] py-[17px]")}>
+              <button
+                type="button"
+                disabled={cutoff || !date}
+                onClick={() => goStep(2)}
+                className={cx(button({ variant: cutoff || !date ? "disabled" : "primary" }), "w-full max-w-[340px] py-[17px]")}
+              >
                 Ver mesas disponibles
               </button>
             </div>
@@ -366,25 +414,56 @@ export function Reservation({ plan, whatsapp }: { plan: PlanData; whatsapp: stri
             </div>
           )}
 
+          {cutoffNotice}
+
           {noFree && (
             <div className="flex flex-col gap-3 rounded-xs border-[1.5px] border-sumeria bg-[#1A0F0E] p-[22px]">
               <div className="flex items-center gap-2.5">
                 <XMark size={16} stroke={4} className="text-sumeria" />
-                <h3 className="m-0 font-display text-2xl leading-[1.05] font-semibold uppercase">No quedan mesas para {people} en este turno</h3>
+                <h3 className="m-0 font-display text-2xl leading-[1.05] font-semibold uppercase">No quedan mesas para {people} este día</h3>
               </div>
               <p className="m-0 text-[15px] leading-normal text-sand">
-                Probá con el otro turno u otro día. También podés escribirnos: si se libera una mesa, te avisamos.
+                Probá con otro día. También podés escribirnos: si se libera una mesa, te avisamos.
               </p>
               <div className="flex flex-wrap gap-2">
-                <button type="button" onClick={() => changeQuery(() => setTurn(turn === 0 ? 1 : 0))} className={button({ variant: "outline", size: "sm" })}>
-                  Probar {turnOf(turn === 0 ? 1 : 0).name.toLowerCase()}
-                </button>
-                <button type="button" onClick={() => goStep(1)} className={button({ variant: "ghost", size: "sm" })}>
+                <button type="button" onClick={() => goStep(1)} className={button({ variant: "outline", size: "sm" })}>
                   Elegir otro día
                 </button>
                 <a href={waLink(whatsapp)} target="_blank" rel="noopener noreferrer" className="px-1 py-3 font-display text-sm tracking-[.1em] uppercase underline">
                   Escribinos por WhatsApp
                 </a>
+              </div>
+            </div>
+          )}
+
+          {!cutoff && combos.length > 0 && (
+            <div className="flex flex-col gap-3 rounded-xs border border-bone/14 bg-coal p-[18px]">
+              <h3 className="m-0 font-display text-xl leading-[1.05] font-semibold tracking-[.06em] uppercase">Combinar mesas</h3>
+              <p className="m-0 text-[14.5px] leading-normal text-sand">
+                {fitN
+                  ? `Estas combinaciones aprovechan mejor los lugares que las mesas sueltas libres. `
+                  : `No hay una mesa libre para ${people} ${plural(people, "persona", "personas")}. `}
+                Podés juntar mesas que están una al lado de la otra:
+              </p>
+              <div className="flex flex-wrap gap-2" role="group" aria-label="Combinaciones de mesas">
+                {combos.map((c) => {
+                  const on = c.tables.join() === selection.join();
+                  return (
+                    <button
+                      key={c.tables.join("-")}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => setSelection(c.tables)}
+                      className={cx("flex min-h-11 flex-col gap-1 rounded-xs border-[1.5px] bg-ink px-4 py-2.5 text-left", on ? "border-sumeria" : "border-bone/18")}
+                    >
+                      <span className="flex items-center gap-2 font-display text-lg font-semibold uppercase">
+                        {on && <RedX size={10} stroke={4} />}
+                        {tablesLabel(c.tables)}
+                      </span>
+                      <span className="font-mono text-xs text-stone-2">{c.capacity} lugares juntos</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -401,18 +480,22 @@ export function Reservation({ plan, whatsapp }: { plan: PlanData; whatsapp: stri
                 <span className="font-mono text-[10.5px] tracking-[.05em] text-stone-3 uppercase">Referencias</span>
                 <Legend items={legend} />
               </div>
-              <div className={cx("flex flex-col gap-1.5 rounded-xs border bg-coal p-4", selT ? "border-sumeria" : "border-bone/14")} aria-live="polite">
-                <span className="font-mono text-[10.5px] text-stone-3 uppercase">Tu mesa</span>
-                <span className="font-display text-2xl leading-[1.05] font-semibold uppercase">{selT ? `Mesa ${selT.n}` : "Elegí una mesa"}</span>
+              <div className={cx("flex flex-col gap-1.5 rounded-xs border bg-coal p-4", selTables.length ? "border-sumeria" : "border-bone/14")} aria-live="polite">
+                <span className="font-mono text-[10.5px] text-stone-3 uppercase">{selTables.length > 1 ? "Tus mesas" : "Tu mesa"}</span>
+                <span className="font-display text-2xl leading-[1.05] font-semibold uppercase">{selTables.length ? selLabel : "Elegí una mesa"}</span>
                 <span className="text-sm text-stone-2">
-                  {selT ? `Hasta ${selT.capacity} personas · ${selT.location}` : `Tocá una mesa disponible para ${people} en el plano.`}
+                  {selTables.length > 1
+                    ? `Mesas combinadas · ${selCap} lugares juntos`
+                    : selTables.length
+                      ? `Hasta ${selTables[0].capacity} personas · ${selTables[0].location}`
+                      : `Tocá una mesa disponible para ${people} en el plano.`}
                 </span>
               </div>
               <button
                 type="button"
-                disabled={!selT}
-                onClick={() => selT && goStep(3)}
-                className={cx(button({ variant: selT ? "primary" : "disabled" }), "py-[17px]")}
+                disabled={!selTables.length || cutoff}
+                onClick={() => selTables.length && !cutoff && goStep(3)}
+                className={cx(button({ variant: selTables.length && !cutoff ? "primary" : "disabled" }), "py-[17px]")}
               >
                 Continuar
               </button>
@@ -421,7 +504,7 @@ export function Reservation({ plan, whatsapp }: { plan: PlanData; whatsapp: stri
         </div>
       )}
 
-      {step === 3 && selT && (
+      {step === 3 && selTables.length > 0 && (
         <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,340px),1fr))] items-start gap-[clamp(24px,4vw,56px)]">
           <form
             className="flex flex-col gap-3.5"
@@ -477,25 +560,24 @@ export function Reservation({ plan, whatsapp }: { plan: PlanData; whatsapp: stri
                 {sendErr}
               </span>
             )}
-            <button type="submit" disabled={sending} className={cx(button({ variant: "primary" }), "py-[17px]")}>
-              {sending ? "Enviando…" : "Enviar reserva"}
+            {cutoffNotice}
+            <button type="submit" disabled={sending || cutoff} className={cx(button({ variant: cutoff ? "disabled" : "primary" }), "py-[17px]")}>
+              {sending ? "Enviando…" : cutoff ? "Reservas de hoy cerradas" : "Enviar reserva"}
             </button>
             <span className="text-[13px] leading-normal text-stone-3">La reserva queda pendiente hasta que te confirmemos por WhatsApp.</span>
           </form>
           <div className="flex flex-col gap-3.5 rounded-xs border border-bone/14 bg-coal p-[22px]">
             <span className="font-mono text-[10.5px] text-stone-3 uppercase">Resumen</span>
-            <span className="font-display text-[34px] leading-none font-semibold uppercase">Mesa {selT.n}</span>
+            <span className="font-display text-[34px] leading-none font-semibold uppercase">{selLabel}</span>
             <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-[15px]">
               <dt className="text-stone-3">Día</dt>
               <dd className="m-0">{longDate(date)}</dd>
-              <dt className="text-stone-3">Turno</dt>
-              <dd className="m-0">
-                {turnObj.name} · {turnObj.range}
-              </dd>
+              <dt className="text-stone-3">Horario</dt>
+              <dd className="m-0">{TURN.range}</dd>
               <dt className="text-stone-3">Personas</dt>
               <dd className="m-0">{people}</dd>
               <dt className="text-stone-3">Ubicación</dt>
-              <dd className="m-0">{selT.location}</dd>
+              <dd className="m-0">{selTables.length > 1 ? "Mesas combinadas, juntas" : selTables[0].location}</dd>
             </dl>
             <button type="button" onClick={() => goStep(2)} className="self-start font-mono text-xs text-stone-2 underline">
               Cambiar mesa
@@ -521,13 +603,13 @@ export function Reservation({ plan, whatsapp }: { plan: PlanData; whatsapp: stri
               <dd className="m-0">{last.name}</dd>
               <dt className="text-stone-3">Día</dt>
               <dd className="m-0">{last.date}</dd>
-              <dt className="text-stone-3">Turno</dt>
-              <dd className="m-0">{last.turn}</dd>
+              <dt className="text-stone-3">Horario</dt>
+              <dd className="m-0">{TURN.range}</dd>
               <dt className="text-stone-3">Personas</dt>
               <dd className="m-0">{last.people}</dd>
             </dl>
             <span className="text-[13.5px] leading-normal text-stone-3">
-              Guardamos la mesa para ese turno mientras la confirmamos. Si necesitás cambiar algo, respondé el mensaje que te mandamos.
+              Guardamos la mesa para ese día mientras la confirmamos. Si necesitás cambiar algo, respondé el mensaje que te mandamos.
             </span>
           </div>
           <div className="flex flex-wrap gap-2.5">

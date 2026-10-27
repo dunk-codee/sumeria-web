@@ -112,12 +112,12 @@ async function main() {
         R(0, 0, "20:00", "Martina López", "3442 15 412233", 4, 5, "conf", "web"),
         R(0, 0, "20:15", "Diego Ramírez", "3442 15 559012", 2, 1, "pend", "web", "Es nuestro aniversario"),
         R(0, 0, "20:30", "Familia Gómez", "3442 15 330987", 6, 4, "conf", "tel"),
-        R(0, 1, "22:00", "Lucía Fernández", "3442 15 778120", 2, 3, "pend", "web"),
-        R(0, 1, "22:00", "Juan Pablo Ruiz", "3442 15 601455", 8, 7, "pend", "wa", "Cumpleaños, traen torta"),
+        R(0, 0, "22:00", "Lucía Fernández", "3442 15 778120", 2, 3, "pend", "web"),
+        R(0, 0, "22:00", "Juan Pablo Ruiz", "3442 15 601455", 8, 7, "pend", "wa", "Cumpleaños, traen torta"),
         R(0, 1, "22:15", "Sofía Acosta", "3442 15 219834", 2, 2, "conf", "web"),
         R(0, 1, "22:30", "Ana Ortiz", "3442 15 448210", 4, 6, "canc", "tel"),
-        R(0, 1, "22:00", "Sin reserva", "", 2, 8, "occ", "walkin"),
-        R(1, 1, "22:00", "Tomás Benítez", "3442 15 990321", 4, 5, "pend", "web"),
+        R(0, 0, "22:00", "Sin reserva", "", 2, 8, "occ", "walkin"),
+        R(1, 0, "22:00", "Tomás Benítez", "3442 15 990321", 4, 5, "pend", "web"),
         R(4, 0, "20:00", "Carla Méndez", "3442 15 120044", 6, 4, "conf", "wa"),
       ]);
     }

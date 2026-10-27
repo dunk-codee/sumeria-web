@@ -9,12 +9,14 @@ import { categories, deliveryZones, events, fixtures, products, reservations, se
 export type AdminReservation = {
   id: number;
   date: string;
-  turn: number;
   time: string;
   name: string;
   phone: string;
   people: number;
+  /** Mesa principal (la menor). En reservas combinadas, ver `tables`. */
   tableN: number;
+  /** Todas las mesas de la reserva (más de una si se combinaron). */
+  tables: number[];
   status: "pend" | "conf" | "canc" | "occ";
   source: "web" | "tel" | "wa" | "walkin";
   note: string;
@@ -24,27 +26,42 @@ export type AdminReservation = {
 const resCols = {
   id: reservations.id,
   date: reservations.date,
-  turn: reservations.turn,
   time: reservations.time,
   name: reservations.name,
   phone: reservations.phone,
   people: reservations.people,
   tableN: reservations.tableN,
+  groupId: reservations.groupId,
   status: reservations.status,
   source: reservations.source,
   note: reservations.note,
   arrivedAt: reservations.arrivedAt,
 };
 
-function toAdmin(r: { arrivedAt: Date | null } & Omit<AdminReservation, "arrived">): AdminReservation {
-  const { arrivedAt, ...rest } = r;
-  return { ...rest, arrived: !!arrivedAt };
+type ResRow = { arrivedAt: Date | null; groupId: string | null } & Omit<AdminReservation, "arrived" | "tables">;
+
+/** Une las filas de una reserva combinada (una por mesa) en una sola reserva. */
+function collapse(rows: ResRow[]): AdminReservation[] {
+  const groups = new Map<string, AdminReservation>();
+  const out: AdminReservation[] = [];
+  for (const { arrivedAt, groupId, ...rest } of rows) {
+    const base: AdminReservation = { ...rest, tables: [rest.tableN], arrived: !!arrivedAt };
+    const g = groupId ? groups.get(groupId) : undefined;
+    if (g) {
+      g.tables = [...g.tables, rest.tableN].sort((a, b) => a - b);
+      g.tableN = g.tables[0];
+      continue;
+    }
+    if (groupId) groups.set(groupId, base);
+    out.push(base);
+  }
+  return out;
 }
 
 export async function pendingCount(): Promise<number> {
   const db = await getDb();
   const [{ n }] = await db
-    .select({ n: sql<number>`count(*)::int` })
+    .select({ n: sql<number>`count(distinct coalesce(${reservations.groupId}, ${reservations.id}::text))::int` })
     .from(reservations)
     .where(and(eq(reservations.status, "pend"), gte(reservations.date, todayISO())));
   return n;
@@ -57,8 +74,8 @@ export async function reservationsBetween(from: string, to: string): Promise<Adm
     .select(resCols)
     .from(reservations)
     .where(and(gte(reservations.date, from), lte(reservations.date, to)))
-    .orderBy(asc(reservations.date), asc(reservations.turn), asc(reservations.time), asc(reservations.id));
-  return rows.map(toAdmin);
+    .orderBy(asc(reservations.date), asc(reservations.time), asc(reservations.id));
+  return collapse(rows);
 }
 
 export async function pendingFrom(from: string): Promise<AdminReservation[]> {
@@ -67,8 +84,8 @@ export async function pendingFrom(from: string): Promise<AdminReservation[]> {
     .select(resCols)
     .from(reservations)
     .where(and(eq(reservations.status, "pend"), gte(reservations.date, from)))
-    .orderBy(asc(reservations.date), asc(reservations.time));
-  return rows.map(toAdmin);
+    .orderBy(asc(reservations.date), asc(reservations.time), asc(reservations.id));
+  return collapse(rows);
 }
 
 export async function planTables() {
@@ -105,7 +122,7 @@ export async function adminSettings() {
   const zones = await db.select().from(deliveryZones).orderBy(asc(deliveryZones.position), asc(deliveryZones.id));
   const { zones: _z, ...defaults } = DEFAULT_SETTINGS;
   void _z;
-  return { ...(row ?? { id: 1, ...defaults }), zones };
+  return { ...(row ?? { id: 1, ...defaults, bookingFrom: null, bookingTo: null, blockedDates: [] as string[] }), zones };
 }
 
 /** Mesas con reservas activas a futuro (para avisar antes de quitarlas del plano). */

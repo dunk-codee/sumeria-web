@@ -58,10 +58,18 @@ export function reservationConfirmMessage(r: {
   date: string;
   time: string;
   people: number;
-  tableN: number;
+  /** Mesas asignadas (más de una si se combinaron). */
+  tables: number[];
   address: string;
 }): string {
   const p = parts(r.date);
   const first = r.name.trim().split(/\s+/)[0] ?? r.name;
-  return `¡Hola ${first}! Te confirmamos la reserva en Sumeria para el ${DOW_LONG[p.dow]} ${p.day} a las ${r.time}, ${r.people} personas, mesa ${r.tableN}. Te esperamos en ${r.address}. Si no podés venir, avisanos por acá.`;
+  const mesa = r.tables.length > 1 ? `mesas ${r.tables.slice(0, -1).join(", ")} y ${r.tables[r.tables.length - 1]} (combinadas)` : `mesa ${r.tables[0]}`;
+  return `¡Hola ${first}! Te confirmamos la reserva en Sumeria para el ${DOW_LONG[p.dow]} ${p.day} a las ${r.time}, ${r.people} personas, ${mesa}. Te esperamos en ${r.address}. Si no podés venir, avisanos por acá.`;
+}
+
+/** Consulta de mesa para hoy cuando ya pasó el corte de reservas online. */
+export function sameDayConsultMessage(people: number, name?: string): string {
+  const quien = name?.trim() ? ` Soy ${name.trim()}.` : "";
+  return `¡Hola! Quisiera consultar si hay mesa para hoy para ${people} ${people === 1 ? "persona" : "personas"}. ¿Me pueden confirmar si tienen lugar?${quien} ¡Gracias!`;
 }

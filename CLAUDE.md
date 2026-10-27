@@ -187,11 +187,20 @@ pará `npm run dev` antes de correr `db:seed` o `next build`. Para hacer el buil
   **Si agregás una lectura pública nueva, ponele tag; si agregás una mutación, expirá el tag.**
 - **Reservas**:
   - Estados: `pend` (pendiente) · `conf` (confirmada) · `canc` (cancelada) · `occ` (ocupada sin reserva / walk-in).
-  - Una mesa está libre para (fecha, turno) si no tiene reserva `pend`/`conf`/`occ`.
-  - Índice único parcial `(date, turn, table_n) WHERE status <> 'canc'` → imposible duplicar. `POST /api/reservations`
-    responde **409** si la mesa ya fue tomada. Al restaurar o mover una reserva también se valida.
+  - **Turno único** (`lib/turns.ts`, `TURN`: 20:00 a 23:00). La columna `reservations.turn` se conserva y vale siempre 0; la
+    disponibilidad mira solo la fecha (cuentan también las reservas viejas del segundo turno).
+  - Una mesa está libre para una fecha si no tiene reserva `pend`/`conf`/`occ`.
+  - Índice único parcial `(date, turn, table_n) WHERE status <> 'canc'` + chequeo previo en la transacción. `POST /api/reservations`
+    responde **409** si una mesa ya fue tomada. Al restaurar o mover una reserva también se valida.
+  - **Mesas combinadas** (`lib/combos.ts`): hasta 3 mesas contiguas (borde a borde ≤ 8 unidades del plano), sin desperdicio y solo si
+    sobran menos lugares que con la mejor mesa libre. Una fila por mesa con el mismo `reservations.group_id`; el panel las junta
+    (`collapse` en `lib/admin-data.ts`) y las acciones (cancelar, confirmar, llegaron, restaurar) afectan a todo el grupo.
+    Una reserva combinada no se mueve de mesa: se cancela y se carga otra.
+  - **Días reservables**: `settings.booking_from/booking_to/blocked_dates` (panel → Calendario de reservas). Sin rango: hoy → hoy + 7.
+    Regla pura en `lib/booking.ts` (`bookingStatus`). **Corte del mismo día a las 19:30** (`SAME_DAY_CUTOFF`): la web lo muestra con
+    botón a WhatsApp y `POST /api/reservations` responde 422 `code: "cutoff"`.
   - Las reservas web entran como `pend`; el local confirma desde el panel (abre `wa.me/549<tel>` con el mensaje y pasa a `conf`).
-  - Turnos fijos en `lib/turns.ts`: 1° 20:00–21:45, 2° 22:00–00:00. Reserva web: hasta 8 personas, próximos 7 días.
+  - Web: hasta 8 personas. El panel usa `/api/admin/availability` (sin las reglas del sitio).
 - **Carrito**: estado en `SiteProvider`, persistido en `localStorage` (`sumeria:pedido`). Arma el mensaje exacto del handoff
   (`orderMessage` en `lib/whatsapp.ts`) y abre `wa.me/<whatsapp del local>`.
 - **Fotos**: `Photo.tsx` pinta siempre el fondo placeholder cálido y encima la foto (`CldImage` si hay `public_id`, si no `next/image`).

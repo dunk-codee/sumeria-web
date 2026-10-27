@@ -5,8 +5,11 @@ import { refresh, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { checkCredentials, endSession, requireAdmin, startSession } from "@/lib/auth";
+import { takenTables } from "@/lib/availability";
+import { MAX_BOOKING_SPAN } from "@/lib/booking";
 import { TAGS } from "@/lib/data";
-import { todayISO } from "@/lib/dates";
+import { DEFAULT_SETTINGS } from "@/lib/defaults";
+import { addDays, todayISO } from "@/lib/dates";
 import { getDb, isUniqueViolation } from "@/lib/db";
 import { sizeFor } from "@/lib/plan";
 import {
@@ -21,7 +24,7 @@ import {
   TABLE_SHAPES,
   tables,
 } from "@/lib/schema";
-import { turnOf } from "@/lib/turns";
+import { TURN } from "@/lib/turns";
 import { isoDate } from "@/lib/validation";
 
 export type ActionResult = { ok: true; id?: number } | { ok: false; error: string };
@@ -54,23 +57,46 @@ export async function logout() {
 
 /* ---------------- Reservas ---------------- */
 
+/** Condición que alcanza a todas las filas de una reserva (una por mesa si es combinada). */
+async function sameReservation(db: Awaited<ReturnType<typeof getDb>>, id: number) {
+  const [row] = await db.select({ groupId: reservations.groupId }).from(reservations).where(eq(reservations.id, id));
+  return row?.groupId ? eq(reservations.groupId, row.groupId) : eq(reservations.id, id);
+}
+
 export async function setReservationStatus(id: number, status: "pend" | "conf" | "canc"): Promise<ActionResult> {
   await requireAdmin();
   const db = await getDb();
+  const where = await sameReservation(db, id);
   try {
-    await db.update(reservations).set({ status }).where(eq(reservations.id, id));
+    await db.transaction(async (tx) => {
+      const rows = await tx.select().from(reservations).where(where);
+      if (!rows.length) return;
+      // Restaurar: las mesas no pueden haber sido tomadas (también por reservas viejas de otro turno).
+      if (rows[0].status === "canc" && status !== "canc") {
+        const taken = await takenTables(tx, rows[0].date, rows.map((r) => r.tableN));
+        if (taken.length) throw new Taken(taken);
+      }
+      await tx.update(reservations).set({ status }).where(where);
+    });
   } catch (e) {
-    if (isUniqueViolation(e)) return fail("La mesa ya está tomada en ese turno. Cambiala antes de restaurar.");
+    if (e instanceof Taken) return fail(`La mesa ${e.tables.join(", ")} ya está tomada ese día. Cambiala antes de restaurar.`);
+    if (isUniqueViolation(e)) return fail("La mesa ya está tomada ese día. Cambiala antes de restaurar.");
     throw e;
   }
   done();
   return ok();
 }
 
+class Taken extends Error {
+  constructor(public tables: number[]) {
+    super("Mesa tomada");
+  }
+}
+
 export async function markArrived(id: number): Promise<ActionResult> {
   await requireAdmin();
   const db = await getDb();
-  await db.update(reservations).set({ arrivedAt: new Date(), status: "conf" }).where(eq(reservations.id, id));
+  await db.update(reservations).set({ arrivedAt: new Date(), status: "conf" }).where(await sameReservation(db, id));
   done();
   return ok();
 }
@@ -78,10 +104,14 @@ export async function markArrived(id: number): Promise<ActionResult> {
 export async function changeReservationTable(id: number, tableN: number): Promise<ActionResult> {
   await requireAdmin();
   const db = await getDb();
+  const [row] = await db.select().from(reservations).where(eq(reservations.id, id));
+  if (!row) return fail("No encontramos la reserva.");
+  if (row.groupId) return fail("Es una reserva de mesas combinadas: cancelala y cargá una nueva para cambiar las mesas.");
+  if ((await takenTables(db, row.date, [tableN])).length) return fail(`La mesa ${tableN} ya está ocupada ese día.`);
   try {
     await db.update(reservations).set({ tableN }).where(eq(reservations.id, id));
   } catch (e) {
-    if (isUniqueViolation(e)) return fail(`La mesa ${tableN} ya está ocupada en ese turno.`);
+    if (isUniqueViolation(e)) return fail(`La mesa ${tableN} ya está ocupada ese día.`);
     throw e;
   }
   done();
@@ -93,7 +123,6 @@ const manualRes = z.object({
   name: z.string().trim().min(1).max(80),
   phone: z.string().trim().max(30).default(""),
   date: isoDate,
-  turn: z.number().int().min(0).max(1),
   people: z.number().int().min(1).max(40),
   tableN: z.number().int().positive(),
   note: z.string().trim().max(300).default(""),
@@ -105,30 +134,33 @@ export async function createManualReservation(input: z.input<typeof manualRes>):
   if (!p.success) return fail("Completá nombre y elegí una mesa libre.");
   const r = p.data;
   const db = await getDb();
+  if ((await takenTables(db, r.date, [r.tableN])).length) return fail(`La mesa ${r.tableN} ya está tomada ese día.`);
   try {
     const [row] = await db
       .insert(reservations)
-      .values({ ...r, time: turnOf(r.turn).time, phone: r.phone || "—", status: "conf" })
+      .values({ ...r, turn: TURN.id, time: TURN.time, phone: r.phone || "—", status: "conf" })
       .returning({ id: reservations.id });
     done();
     return ok(row.id);
   } catch (e) {
-    if (isUniqueViolation(e)) return fail(`La mesa ${r.tableN} ya está tomada en ese turno.`);
+    if (isUniqueViolation(e)) return fail(`La mesa ${r.tableN} ya está tomada ese día.`);
     throw e;
   }
 }
 
 /** Mesa ocupada por gente sin reserva (queda bloqueada en el sitio). */
-export async function setWalkin(date: string, turn: number, tableN: number, on: boolean): Promise<ActionResult> {
+export async function setWalkin(date: string, tableN: number, on: boolean): Promise<ActionResult> {
   await requireAdmin();
+  if (!isoDate.safeParse(date).success) return fail("Fecha inválida.");
   const db = await getDb();
   if (on) {
+    if ((await takenTables(db, date, [tableN])).length) return fail(`La mesa ${tableN} ya está tomada.`);
     try {
       await db.insert(reservations).values({
         date,
-        turn,
+        turn: TURN.id,
         tableN,
-        time: turnOf(turn).time,
+        time: TURN.time,
         name: "Sin reserva",
         people: 0,
         status: "occ",
@@ -139,11 +171,43 @@ export async function setWalkin(date: string, turn: number, tableN: number, on: 
       throw e;
     }
   } else {
-    await db
-      .delete(reservations)
-      .where(and(eq(reservations.date, date), eq(reservations.turn, turn), eq(reservations.tableN, tableN), eq(reservations.status, "occ")));
+    await db.delete(reservations).where(and(eq(reservations.date, date), eq(reservations.tableN, tableN), eq(reservations.status, "occ")));
   }
   done();
+  return ok();
+}
+
+/* ---------------- Calendario de reservas ---------------- */
+
+const bookingInput = z
+  .object({
+    from: isoDate.nullable(),
+    to: isoDate.nullable(),
+    blocked: z.array(isoDate).max(400),
+  })
+  .refine((b) => (b.from === null) === (b.to === null), { message: "Elegí el primer y el último día, o dejá los dos vacíos." })
+  .refine((b) => !b.from || !b.to || b.to >= b.from, { message: "El último día tiene que ser igual o posterior al primero." })
+  .refine((b) => !b.from || !b.to || b.to <= addDays(b.from, MAX_BOOKING_SPAN - 1), {
+    message: `El rango puede abarcar hasta ${MAX_BOOKING_SPAN} días.`,
+  });
+export type BookingInput = z.input<typeof bookingInput>;
+
+/** Define desde qué día hasta cuál se puede reservar desde el sitio y qué días quedan cerrados. */
+export async function saveBooking(input: BookingInput): Promise<ActionResult> {
+  await requireAdmin();
+  const p = bookingInput.safeParse(input);
+  if (!p.success) return fail(p.error.issues[0]?.message ?? "Revisá las fechas.");
+  const { from, to } = p.data;
+  const today = todayISO();
+  const blocked = [...new Set(p.data.blocked)].filter((d) => d >= today).sort();
+  const { zones: _z, ...defaults } = DEFAULT_SETTINGS;
+  void _z;
+  const db = await getDb();
+  await db
+    .insert(settings)
+    .values({ id: 1, ...defaults, bookingFrom: from, bookingTo: to, blockedDates: blocked })
+    .onConflictDoUpdate({ target: settings.id, set: { bookingFrom: from, bookingTo: to, blockedDates: blocked } });
+  done(TAGS.settings);
   return ok();
 }
 

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { AdminReservation } from "@/lib/admin-data";
 import { dayMonth } from "@/lib/dates";
-import { cx } from "@/lib/format";
+import { cx, tablesLabel } from "@/lib/format";
 import { SOURCE_LABEL, useResActions } from "./reservations";
 import { AButton, Card, StatusTag } from "./ui";
 
@@ -26,7 +26,7 @@ export function HomeLists({ pending, today, address, todayISO }: { pending: Admi
             <div className="flex min-w-0 flex-1 flex-col gap-0.5">
               <span className="text-sm font-semibold">{r.name}</span>
               <span className="text-[12.5px] text-panel-muted">
-                {r.people} personas · Mesa {r.tableN} · {SOURCE_LABEL[r.source]}
+                {r.people} personas · {tablesLabel(r.tables)} · {SOURCE_LABEL[r.source]}
               </span>
             </div>
             <div className="flex gap-2">
@@ -54,7 +54,7 @@ export function HomeLists({ pending, today, address, todayISO }: { pending: Admi
             <div className="flex min-w-0 flex-1 flex-col gap-0.5">
               <span className={cx("text-sm font-semibold", r.status === "canc" && "line-through")}>{r.name}</span>
               <span className="text-[12.5px] text-panel-muted">
-                {r.people} personas · Mesa {r.tableN}
+                {r.people} personas · {tablesLabel(r.tables)}
                 {r.arrived && " · Llegaron"}
               </span>
             </div>

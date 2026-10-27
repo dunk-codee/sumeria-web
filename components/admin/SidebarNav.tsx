@@ -10,6 +10,7 @@ import { RedX } from "../XMark";
 const NAV = [
   { href: "/admin", label: "Inicio" },
   { href: "/admin/reservas", label: "Reservas", badge: true },
+  { href: "/admin/calendario", label: "Calendario de reservas" },
   { href: "/admin/productos", label: "Productos" },
   { href: "/admin/categorias", label: "Categorías" },
   { href: "/admin/eventos", label: "Eventos y promos" },

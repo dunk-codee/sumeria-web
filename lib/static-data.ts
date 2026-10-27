@@ -1,6 +1,7 @@
 import { FIXTURES, TABLES, ZONES } from "../scripts/data/plan";
 import { MENU } from "../scripts/data/menu";
 import type { MenuCategory, PlanData, SiteSettings } from "./data";
+import { DEFAULT_BOOKING } from "./booking";
 import { DEFAULT_SETTINGS } from "./defaults";
 import { sizeFor } from "./plan";
 
@@ -32,6 +33,7 @@ export const STATIC_MENU: MenuCategory[] = MENU.map((c, ci) => ({
 
 export const STATIC_SETTINGS: SiteSettings = {
   ...DEFAULT_SETTINGS,
+  booking: DEFAULT_BOOKING,
   zones: ZONES.map((z, i) => ({ id: i + 1, ...z })),
 };
 

@@ -1,26 +1,20 @@
 import { z } from "zod";
-import { addDays, isISODate, todayISO } from "./dates";
-import { BOOKING_DAYS, MAX_PEOPLE } from "./turns";
+import { isISODate } from "./dates";
+import { COMBO_MAX_TABLES } from "./combos";
+import { MAX_PEOPLE } from "./turns";
 
 export const isoDate = z.string().refine(isISODate, "Fecha inválida");
 
-/** La fecha tiene que estar dentro de la ventana reservable desde el sitio. */
-export function inBookingWindow(date: string) {
-  const today = todayISO();
-  return date >= today && date <= addDays(today, BOOKING_DAYS - 1);
-}
-
 export const availabilityQuery = z.object({
   date: isoDate,
-  turn: z.coerce.number().int().min(0).max(1),
   people: z.coerce.number().int().min(1).max(MAX_PEOPLE).default(2),
 });
 
 export const reservationInput = z.object({
   date: isoDate,
-  turn: z.number().int().min(0).max(1),
   people: z.number().int().min(1).max(MAX_PEOPLE),
-  tableN: z.number().int().positive(),
+  /** Una mesa, o varias si se combinan (ver `lib/combos.ts`). */
+  tables: z.array(z.number().int().positive()).min(1, "Elegí una mesa").max(COMBO_MAX_TABLES, "Demasiadas mesas combinadas"),
   name: z.string().trim().min(2, "Completá tu nombre").max(80),
   phone: z
     .string()

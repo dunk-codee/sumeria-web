@@ -77,6 +77,8 @@ export function PlanEditor({ initial, withUpcoming }: { initial: PlanData; withU
   const planList: PlanTable[] = tables.map((t) => ({
     ...t,
     round: t.shape === "round",
+    capacity: t.capacity,
+    chair: sel === t.n ? "border-sumeria bg-sumeria/40" : "border-bone/60 bg-bone/15",
     className: cx(
       "cursor-grab touch-none select-none active:cursor-grabbing",
       sel === t.n ? "border-2 border-sumeria bg-sumeria/15 shadow-[0_6px_20px_rgba(0,0,0,.5)]" : "border-[1.5px] border-bone/85 bg-panel-surface",

@@ -8,7 +8,7 @@ import { waDisplay, waLink } from "@/lib/whatsapp";
 
 export const metadata: Metadata = {
   title: "Reservas",
-  description: "Elegí día, turno y mesa en el plano del salón. Te confirmamos por WhatsApp.",
+  description: "Elegí día y mesa en el plano del salón. Te confirmamos por WhatsApp.",
 };
 
 export default async function ReservasPage() {
@@ -21,14 +21,14 @@ export default async function ReservasPage() {
           <PageTitle>Reservá tu mesa</PageTitle>
         </div>
         {dbConfigured() ? (
-          <Reservation plan={plan} whatsapp={settings.whatsapp} />
+          <Reservation plan={plan} whatsapp={settings.whatsapp} booking={settings.booking} />
         ) : (
           // Modo sin base: las reservas online se activan al conectar la base de datos.
           <div className="flex max-w-[620px] flex-col gap-4 rounded-xs border border-bone/14 bg-coal p-[clamp(22px,3vw,36px)]">
             <XMark size={36} stroke={3.6} className="text-sumeria" />
             <h2 className="m-0 font-display text-[clamp(28px,3vw,40px)] leading-none font-semibold uppercase">Reservá por WhatsApp</h2>
             <p className="m-0 text-base leading-[1.55] text-stone-2">
-              Escribinos con el día, el turno (20:00 o 22:00) y cuántos son, y te confirmamos la mesa por ahí.
+              Escribinos con el día y cuántos son, y te confirmamos la mesa por ahí.
             </p>
             <a
               href={waLink(settings.whatsapp, "¡Hola Sumeria! Quiero reservar una mesa.")}

@@ -16,7 +16,7 @@ export function todayISO(now: Date = new Date()): string {
 
 /** Hora actual en Argentina, "HH:MM". */
 export function nowTime(now: Date = new Date()): string {
-  return new Intl.DateTimeFormat("es-AR", { timeZone: TZ, hour: "2-digit", minute: "2-digit", hour12: false }).format(now);
+  return new Intl.DateTimeFormat("es-AR", { timeZone: TZ, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(now);
 }
 
 /** Interpreta un ISO como fecha de calendario (sin corrimiento de zona). */

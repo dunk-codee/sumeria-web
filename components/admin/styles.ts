@@ -52,3 +52,10 @@ export const PANEL_TABLE: Record<"free" | "pend" | "conf" | "occ", string> = {
   conf: "border-[1.5px] border-panel-text bg-panel-text text-panel-bg",
   occ: "border border-smoke-4 bg-smoke-2 text-stone-2",
 };
+
+export const PANEL_CHAIR: Record<"free" | "pend" | "conf" | "occ", string> = {
+  free: "border-bone/60 bg-bone/15",
+  pend: "border-dashed border-kraft/80 bg-kraft/15",
+  conf: "border-panel-text bg-panel-text/70",
+  occ: "border-smoke-4 bg-smoke-3",
+};

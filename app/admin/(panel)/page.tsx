@@ -7,7 +7,6 @@ import { adminProducts, adminSettings, pendingFrom, planTables, reservationsBetw
 import { requireAdmin } from "@/lib/auth";
 import { longDate, nextDays, nowTime, todayISO } from "@/lib/dates";
 import { cx } from "@/lib/format";
-import { currentTurn } from "@/lib/turns";
 
 function greeting(time: string) {
   const h = Number(time.slice(0, 2));
@@ -18,7 +17,6 @@ export default async function AdminHome() {
   await requireAdmin();
   const today = todayISO();
   const time = nowTime();
-  const turn = currentTurn(time);
   const [todayRes, pending, plan, { prods }, s] = await Promise.all([
     reservationsBetween(today, today),
     pendingFrom(today),
@@ -27,7 +25,7 @@ export default async function AdminHome() {
     adminSettings(),
   ]);
   const active = todayRes.filter((r) => r.status !== "canc" && r.status !== "occ");
-  const busy = new Set(todayRes.filter((r) => r.turn === turn && r.status !== "canc").map((r) => r.tableN));
+  const busy = new Set(todayRes.filter((r) => r.status !== "canc").flatMap((r) => r.tables));
   const freeNow = plan.tables.filter((t) => !busy.has(t.n)).length;
   const paused = prods.filter((p) => !p.available).length;
 
@@ -40,14 +38,14 @@ export default async function AdminHome() {
       href: `/admin/reservas?date=${pending[0]?.date ?? today}`,
       alert: pending.length > 0,
     },
-    { label: "Mesas libres ahora", value: `${freeNow} / ${plan.tables.length}`, sub: turn === 0 ? "Primer turno" : "Segundo turno", href: `/admin/reservas?date=${today}&turn=${turn}&view=plan` },
+    { label: "Mesas libres ahora", value: `${freeNow} / ${plan.tables.length}`, sub: "Para el servicio de hoy", href: `/admin/reservas?date=${today}&view=plan` },
     { label: "Productos pausados", value: paused, sub: "Se ven como “no disponible hoy”", href: "/admin/productos?disp=off" },
   ];
 
   return (
     <>
       <PageHead kicker={`Hoy · ${longDate(today)}`} title={greeting(time)}>
-        <NewReservationButton days={nextDays(today, 7)} date={today} turn={turn} />
+        <NewReservationButton days={nextDays(today, 7)} date={today} />
         <Link href="/admin/productos/nuevo" className={abtn({ variant: "outline" })}>
           + Producto
         </Link>

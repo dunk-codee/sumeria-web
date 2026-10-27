@@ -82,7 +82,7 @@ export function SettingsEditor({
             </div>
           ))}
           <span className="text-[12.5px] text-panel-muted">
-            Abierto todos los días. El sitio muestra estos horarios; los turnos de reserva son 20:00 y 22:00.
+            Abierto todos los días. El sitio muestra estos horarios; el turno de reservas es único y los días reservables se definen en Calendario de reservas.
           </span>
         </Card>
         <Card className="col-span-full flex flex-col gap-3 p-[18px]">

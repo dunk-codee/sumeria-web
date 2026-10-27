@@ -11,8 +11,7 @@ import {
 } from "@/app/admin/actions";
 import type { AdminReservation } from "@/lib/admin-data";
 import { longDate, todayISO } from "@/lib/dates";
-import { cx } from "@/lib/format";
-import { TURNS } from "@/lib/turns";
+import { cx, tablesLabel } from "@/lib/format";
 import { reservationConfirmMessage, toWaNumber, waLink } from "@/lib/whatsapp";
 import { XMark } from "../XMark";
 import { AButton, abtn, Field, inputCls, Segmented, useRun } from "./ui";
@@ -29,7 +28,7 @@ export function useResActions(address: string) {
     confirm: (r: AdminReservation) => {
       // Se abre antes del await para que el navegador no lo bloquee como pop-up.
       if (r.phone && r.phone !== "—") {
-        const text = reservationConfirmMessage({ name: r.name, date: r.date, time: r.time, people: r.people, tableN: r.tableN, address });
+        const text = reservationConfirmMessage({ name: r.name, date: r.date, time: r.time, people: r.people, tables: r.tables, address });
         window.open(waLink(toWaNumber(r.phone), text), "_blank", "noopener");
       }
       act(() => run(setReservationStatus(r.id, "conf"), `Reserva de ${r.name} confirmada. Se abrió WhatsApp con el mensaje.`));
@@ -37,10 +36,10 @@ export function useResActions(address: string) {
     reject: (r: AdminReservation) => act(() => run(setReservationStatus(r.id, "canc"), `Reserva de ${r.name} rechazada. La mesa vuelve a estar libre.`)),
     cancel: (r: AdminReservation) => act(() => run(setReservationStatus(r.id, "canc"), `Reserva de ${r.name} cancelada.`)),
     restore: (r: AdminReservation) => act(() => run(setReservationStatus(r.id, "pend"), `Reserva de ${r.name} restaurada como pendiente.`)),
-    seat: (r: AdminReservation) => act(() => run(markArrived(r.id), `${r.name} llegó. Mesa ${r.tableN} ocupada.`)),
+    seat: (r: AdminReservation) => act(() => run(markArrived(r.id), `${r.name} llegó. ${tablesLabel(r.tables)} ocupada${r.tables.length > 1 ? "s" : ""}.`)),
     move: (r: AdminReservation, n: number) => act(() => run(changeReservationTable(r.id, n), `${r.name} pasó a la mesa ${n}.`)),
-    walkin: (date: string, turn: number, n: number, on: boolean) =>
-      act(() => run(setWalkin(date, turn, n, on), on ? `Mesa ${n} marcada como ocupada.` : `Mesa ${n} liberada.`)),
+    walkin: (date: string, n: number, on: boolean) =>
+      act(() => run(setWalkin(date, n, on), on ? `Mesa ${n} marcada como ocupada.` : `Mesa ${n} liberada.`)),
   };
 }
 
@@ -55,7 +54,7 @@ export function NewReservationDrawer({
   open: boolean;
   onClose: () => void;
   days: string[];
-  initial: { date: string; turn: number; tableN?: number };
+  initial: { date: string; tableN?: number };
 }) {
   const run = useRun();
   const router = useRouter();
@@ -63,7 +62,6 @@ export function NewReservationDrawer({
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [date, setDate] = useState(initial.date);
-  const [turn, setTurn] = useState(initial.turn);
   const [people, setPeople] = useState("2");
   const [tableN, setTableN] = useState<number | "">(initial.tableN ?? "");
   const [note, setNote] = useState("");
@@ -75,7 +73,6 @@ export function NewReservationDrawer({
     if (!open) return;
     /* eslint-disable react-hooks/set-state-in-effect -- reinicia el formulario al abrir */
     setDate(initial.date);
-    setTurn(initial.turn);
     setTableN(initial.tableN ?? "");
     setName("");
     setPhone("");
@@ -92,12 +89,12 @@ export function NewReservationDrawer({
   useEffect(() => {
     if (!open) return;
     const ctrl = new AbortController();
-    fetch(`/api/availability?date=${date}&turn=${turn}&people=1`, { signal: ctrl.signal, cache: "no-store" })
+    fetch(`/api/admin/availability?date=${date}`, { signal: ctrl.signal, cache: "no-store" })
       .then((r) => r.json())
       .then((d: { tables: (FreeTable & { status: string })[] }) => setFree(d.tables.filter((t) => t.status === "free")))
       .catch(() => {});
     return () => ctrl.abort();
-  }, [open, date, turn]);
+  }, [open, date]);
 
   if (!open) return null;
   const err = tried && (!name.trim() || !tableN);
@@ -109,12 +106,12 @@ export function NewReservationDrawer({
     }
     start(async () => {
       const r = await run(
-        createManualReservation({ source, name, phone, date, turn, people: Number(people) || 2, tableN: Number(tableN), note }),
+        createManualReservation({ source, name, phone, date, people: Number(people) || 2, tableN: Number(tableN), note }),
         `Reserva de ${name.trim()} cargada en la mesa ${tableN}.`,
       );
       if (r?.ok) {
         onClose();
-        router.push(`/admin/reservas?date=${date}&turn=${turn}`);
+        router.push(`/admin/reservas?date=${date}`);
       }
     });
   };
@@ -152,15 +149,6 @@ export function NewReservationDrawer({
                 ))}
               </select>
             </Field>
-            <Field label="Turno">
-              <select value={turn} onChange={(e) => (setTurn(Number(e.target.value)), setTableN(""))} className={cx(inputCls, "px-2")}>
-                {TURNS.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
             <Field label="Personas">
               <input value={people} onChange={(e) => setPeople(e.target.value.replace(/\D/g, ""))} inputMode="numeric" className={inputCls} />
             </Field>
@@ -188,21 +176,21 @@ export function NewReservationDrawer({
           <button type="button" onClick={save} disabled={saving} className={cx(abtn({ variant: "primary" }), "h-11")}>
             {saving ? "Guardando…" : "Guardar como confirmada"}
           </button>
-          <span className="text-center text-xs text-panel-muted">La mesa queda bloqueada en el sitio para ese turno.</span>
+          <span className="text-center text-xs text-panel-muted">La mesa queda bloqueada en el sitio para ese día.</span>
         </div>
       </aside>
     </>
   );
 }
 
-export function NewReservationButton({ days, date, turn, variant = "primary", label = "+ Cargar reserva" }: { days: string[]; date: string; turn: number; variant?: "primary" | "outline"; label?: string }) {
+export function NewReservationButton({ days, date, variant = "primary", label = "+ Cargar reserva" }: { days: string[]; date: string; variant?: "primary" | "outline"; label?: string }) {
   const [open, setOpen] = useState(false);
   return (
     <>
       <AButton variant={variant} onClick={() => setOpen(true)}>
         {label}
       </AButton>
-      <NewReservationDrawer open={open} onClose={() => setOpen(false)} days={days} initial={{ date, turn }} />
+      <NewReservationDrawer open={open} onClose={() => setOpen(false)} days={days} initial={{ date }} />
     </>
   );
 }

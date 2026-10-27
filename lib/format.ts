@@ -13,3 +13,8 @@ export const plural = (n: number, one: string, many: string) => (n === 1 ? one :
 export function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
 }
+
+/** "Mesa 3" o "Mesas 2 + 4" (reservas con mesas combinadas). */
+export function tablesLabel(tables: number[]): string {
+  return tables.length > 1 ? `Mesas ${tables.join(" + ")}` : `Mesa ${tables[0]}`;
+}
