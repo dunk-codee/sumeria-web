@@ -3,7 +3,7 @@ import { MENU } from "../scripts/data/menu";
 import type { MenuCategory, PlanData, SiteSettings } from "./data";
 import { DEFAULT_BOOKING } from "./booking";
 import { DEFAULT_SETTINGS } from "./defaults";
-import { sizeFor } from "./plan";
+import { TABLE_BOX } from "./plan";
 
 /**
  * Datos de respaldo para el "modo sin base" (producción sin DATABASE_URL).
@@ -38,6 +38,6 @@ export const STATIC_SETTINGS: SiteSettings = {
 };
 
 export const STATIC_PLAN: PlanData = {
-  tables: TABLES.map((t) => ({ n: t.n, capacity: t.cap, shape: t.shape, x: t.x, y: t.y, location: t.location, ...sizeFor(t.cap, t.shape) })),
+  tables: TABLES.map((t) => ({ n: t.n, capacity: t.cap, shape: t.shape, x: t.x, y: t.y, location: t.location, ...TABLE_BOX })),
   fixtures: FIXTURES.map((f, i) => ({ id: i + 1, kind: f.kind, x: f.x, y: f.y, w: f.w, h: f.h, label: "label" in f ? f.label : null })),
 };

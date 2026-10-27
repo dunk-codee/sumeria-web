@@ -192,10 +192,49 @@ pará `npm run dev` antes de correr `db:seed` o `next build`. Para hacer el buil
   - Una mesa está libre para una fecha si no tiene reserva `pend`/`conf`/`occ`.
   - Índice único parcial `(date, turn, table_n) WHERE status <> 'canc'` + chequeo previo en la transacción. `POST /api/reservations`
     responde **409** si una mesa ya fue tomada. Al restaurar o mover una reserva también se valida.
-  - **Mesas combinadas** (`lib/combos.ts`): hasta 3 mesas contiguas (borde a borde ≤ 8 unidades del plano), sin desperdicio y solo si
-    sobran menos lugares que con la mejor mesa libre. Una fila por mesa con el mismo `reservations.group_id`; el panel las junta
-    (`collapse` en `lib/admin-data.ts`) y las acciones (cancelar, confirmar, llegaron, restaurar) afectan a todo el grupo.
-    Una reserva combinada no se mueve de mesa: se cancela y se carga otra.
+  - **Mesas**: todas **cuadradas y del mismo tamaño** (`TABLE_SIZE = 12` en `lib/plan.ts`; `w`/`h` se guardan pero siempre valen eso).
+    Sueltas para 4; las **pegadas de a dos** son para 3 cada una (un lado contra la otra), así el par sienta 6. `FloorPlan` dibuja las
+    sillas solo en los **lados libres** (`touchingSides`: otra mesa a < 0,5 unidades). Plano actual: 11 mesas, 38 lugares, pares 1+2,
+    6+7 y 9+10 (`scripts/data/plan.ts` y migración `0002_mesas_cuadradas`). El editor del panel ya no tiene "Forma"; "Agregar mesa"
+    agrega una cuadrada de 4.
+  - **Opciones de lugar** (`seatingOptions` en `lib/combos.ts`, pura: la usan el sitio y el servidor). Mesa sola o **dos mesas juntas**
+    (`COMBO_MAX_TABLES = 2`). Pares **vecinos**: B es la mesa libre más cercana a A en alguna dirección (eje dominante entre centros)
+    o al revés, y borde a borde ≤ `NEAR_MAX_GAP = 12`; si no, son **separados** (el local los junta). Sin desperdicio: un par vale si
+    `suma − personas < capacidad de la más chica`. Pares vecinos solo si desperdician menos que la mejor mesa sola; separados solo
+    si no hay mesa sola. `tier`: `exact` (mesas solas o pares vecinos), `apart` (pares separados) o `none`.
+    **Prioridad entre pares** (se usa el primer grupo con opciones; manda la **cercanía**, pedido del cliente):
+    1. pares **pegados** que alcanzan; 2. pares **vecinos** (da igual si una de las mesas es mitad de un par pegado);
+    3. pares **separados**, por último. Ej. 7 personas con libres el par 1+2, la 5 y la 11 → se ofrece 1+5 / 2+5 (vecinas), no 5+11.
+    (Se probó priorizar dos sueltas aunque estuvieran lejos y el cliente prefirió volver a la cercanía.)
+    **Pegadas primero** (pedido del cliente): si **algún** par de mesas **pegadas** (`joined`, borde a borde < `JOINED_GAP = 0,5`)
+    alcanza para el grupo, **solo se ofrecen pares pegados**: no se arman pares con mesas sueltas (así no se mezclan separadas con juntas).
+    Ej.: 5–6 personas → solo 1+2, 6+7, 9+10 (los que estén libres); si no queda ningún par pegado libre, recién ahí se juntan sueltas
+    (6+9, 3+4…); con 7 el par pegado no alcanza y se combinan todas.
+    **Grupos chicos** (≤ `SMALL_GROUP_MAX = 3`, pedido del cliente: 1, 2 y 3 personas): solo **mesas sueltas** (las de 4) si hay
+    alguna libre, aunque una de 3 alcance; las mitades de un par
+    pegado libre se guardan para grupos grandes y entran solo si no queda ninguna suelta (si la compañera ya está tomada, esa mesa
+    cuenta como suelta). En el plano se ven como "No disponible para P · Te mostramos las que mejor se ajustan a tu grupo"
+    (estado `small`; aria "no disponible para este grupo"). Al pasar al
+    paso 2, si no hay mesa sola que alcance, la web **elige de entrada** el primer par pegado ("Mesas pegadas · 6 lugares"); se puede cambiar.
+    **Tocar una mesa de un par pegado elige las dos de una** (ej. tocar la 1 elige 1 + 2), sin pasar por el cuadro.
+    `GET /api/availability` devuelve `tier` + `options`;
+    `POST /api/reservations` acepta **solo** una de esas opciones (si no, 400 `code: "unavailable"`, y la web vuelve al paso 2).
+  - Dos mesas = una fila por mesa con el mismo `reservations.group_id`; el panel las junta (`collapse` en `lib/admin-data.ts`) y las
+    acciones (cancelar, confirmar, llegaron, restaurar) afectan a todo el grupo. No se mueven de mesa: se cancela y se carga otra.
+    En el panel, si no son vecinas (`isApart`) se ven con la etiqueta **"Separadas: juntarlas"**.
+  - **Flujo web** (`components/site/Reservation.tsx`), 3 pasos + confirmación:
+    1. **Día y personas**: tira de días, horario (turno único) y personas, **sin plano**. Aviso de disponibilidad **sin números
+       ni detalles** (pedido del cliente), en tarjeta con ícono + texto (no solo color):
+       - **verde** (tokens `ok` / `ok-bg`, ✓): "Hay lugar para P personas este día." si hay alguna opción (mesa sola, par o separadas);
+       - **roja** (borde `sumeria`, fondo `alert-bg`, X): "No quedan mesas para P este día…" con WhatsApp, y **el botón
+         "Ver mesas disponibles" no se muestra**.
+       Lo de juntar mesas se explica en el paso 2.
+    2. **Mesa**: plano. Mesa sola → se elige al tocarla. Mesa que solo sirve en par → queda como **ancla** (`anchor`) y aparecen
+       **cuadros** (`groups` de `FloorPlan`) con cada vecina; tocando el cuadro o la mesa marcada "JUNTAR" (`partner`) se elige el par.
+       Los pares separados no llevan cuadro (atravesaría el salón): solo se marca la compañera. Lista "Juntar mesas" sincronizada
+       con el ancla (alternativa por teclado/lector).
+    3. **Tus datos**.
+    En los pasos 2 y 3 hay una **flecha "Volver"** (`BackButton`) además de los links "Cambiar" / "Cambiar mesa".
   - **Días reservables**: `settings.booking_from/booking_to/blocked_dates` (panel → Calendario de reservas). Sin rango: hoy → hoy + 7.
     Regla pura en `lib/booking.ts` (`bookingStatus`). **Corte del mismo día a las 19:30** (`SAME_DAY_CUTOFF`): la web lo muestra con
     botón a WhatsApp y `POST /api/reservations` responde 422 `code: "cutoff"`.
@@ -256,6 +295,9 @@ pará `npm run dev` antes de correr `db:seed` o `next build`. Para hacer el buil
 - Agregados al modelo del handoff: `categories.visible/featured`, `events.event_date/when_label/cta_label/cta_target`,
   `tables.location`, `products.placeholder/photo_cutout/photo_url`, `settings.city/instagram`.
 - La barra de prototipo (Mobile/Desktop, presets por hash) **no se implementa** (lo dice el handoff).
+- **Mesas** (pedido del cliente, 27/10/2026): solo cuadradas y del mismo tamaño; pares pegados de 3 + 3. Grupos que no entran en una
+  mesa juntan dos (primero vecinas; si no queda ninguna, separadas). La reserva tiene 3 pasos y el plano está solo en el paso 2.
+  La distribución actual es una propuesta: se ajusta desde *Plano del local*.
 
 ---
 
@@ -280,6 +322,10 @@ desde el panel, porque `db:seed` no pisa datos existentes (solo con `-- --force`
 
 
 ## 8. Próximos pasos (en orden sugerido)
+
+0. **Pedido del cliente, pospuesto**: **silla extra** en reservas (ej. mesa de 4 para 5 personas): hasta 1 silla extra por mesa,
+   ofrecida **solo si no hay otra opción justa**, mesa marcada "+1 silla" en el plano y aviso "agregar 1 silla" en el panel
+   (se puede derivar de `personas − capacidad`, sin columna nueva). Encaja como un escalón más en `seatingOptions`.
 
 1. **Infra**: crear proyecto en Neon y en Vercel, cargar las variables (§4), `npm run db:migrate && npm run db:seed` contra Neon
    (con Cloudinary configurado, el seed sube las fotos y guarda los `public_id`).

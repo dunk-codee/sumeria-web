@@ -1,5 +1,5 @@
 import { and, eq, inArray, ne } from "drizzle-orm";
-import { offerCombos, type Combo, type ComboTable } from "./combos";
+import { seatingOptions, type ComboTable, type SeatingOption, type SeatingTier } from "./combos";
 import { getDb, type DB } from "./db";
 import { reservations, type ResStatus } from "./schema";
 
@@ -35,20 +35,17 @@ export async function takenTables(db: Executor, date: string, tableNs: number[])
   return rows.map((r) => r.tableN);
 }
 
-export type TableAvailability = { n: number; capacity: number; status: PublicTableStatus; selectable: boolean };
+export type TableAvailability = { n: number; capacity: number; status: PublicTableStatus };
 
-/** Mesas con su estado y combinaciones ofrecidas (sin datos de clientes). */
+/** Mesas con su estado y opciones de lugar para el grupo (sin datos de clientes). Ver `lib/combos.ts`. */
 export function buildAvailability(
   planTables: ComboTable[],
   statuses: Record<number, PublicTableStatus>,
   people: number,
-): { tables: TableAvailability[]; combos: Combo[] } {
-  const tables = planTables.map((t) => {
-    const status = statuses[t.n] ?? "free";
-    return { n: t.n, capacity: t.capacity, status, selectable: status === "free" && t.capacity >= people };
-  });
+): { tables: TableAvailability[]; tier: SeatingTier; options: SeatingOption[] } {
+  const tables = planTables.map((t) => ({ n: t.n, capacity: t.capacity, status: statuses[t.n] ?? "free" }));
   const free = planTables.filter((t) => (statuses[t.n] ?? "free") === "free");
-  return { tables, combos: offerCombos(free, people) };
+  return { tables, ...seatingOptions(free, people) };
 }
 
 function toPublic(s: ResStatus): PublicTableStatus {

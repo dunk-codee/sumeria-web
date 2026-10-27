@@ -19,11 +19,15 @@ export type PlanTable = {
   style?: CSSProperties;
   /** Clases de las sillas (relleno + borde). Si falta, usa las neutras. */
   chair?: string;
-  /** Mesa que forma parte de una combinación: se dibuja un contorno que agrupa a todas las marcadas. */
-  grouped?: boolean;
   /** Capacidad = cantidad de sillas. Si falta, no se dibujan. */
   capacity?: number;
 };
+
+/**
+ * Cuadro que encierra mesas que van juntas. `active`: el par elegido (borde sólido);
+ * si no, es una opción (punteado). Con `onClick` el cuadro es un botón.
+ */
+export type PlanGroup = { key: string; tables: number[]; active?: boolean; onClick?: () => void; aria?: string };
 
 const CHAIR_T = 9; // grosor visible de la silla (px)
 const CHAIR_GAP = 2; // aire entre silla y tablero (px)
@@ -46,8 +50,29 @@ function sideChairs(side: Side, k: number): Chair[] {
   });
 }
 
-/** Posiciones de sillas según forma y capacidad (w x h = medidas en pantalla). */
-function chairsFor(n: number, round: boolean, w: number, h: number): Chair[] {
+/** Distancia (unidades del plano) por debajo de la cual dos mesas se consideran pegadas. */
+const TOUCH = 0.5;
+
+/**
+ * Lados de la mesa (en pantalla) que tocan a otra mesa: ahí no van sillas.
+ * Se calcula en coordenadas del plano; en portrait los ejes se intercambian (x → arriba/abajo, y → izquierda/derecha).
+ */
+function touchingSides(t: PlanTable, all: PlanTable[], portrait: boolean): Set<Side> {
+  const out = new Set<Side>();
+  for (const o of all) {
+    if (o.n === t.n) continue;
+    const overlapY = Math.min(t.y + t.h, o.y + o.h) - Math.max(t.y, o.y) > TOUCH;
+    const overlapX = Math.min(t.x + t.w, o.x + o.w) - Math.max(t.x, o.x) > TOUCH;
+    if (overlapY && Math.abs(o.x - (t.x + t.w)) < TOUCH) out.add(portrait ? "b" : "r");
+    if (overlapY && Math.abs(t.x - (o.x + o.w)) < TOUCH) out.add(portrait ? "t" : "l");
+    if (overlapX && Math.abs(o.y - (t.y + t.h)) < TOUCH) out.add(portrait ? "r" : "b");
+    if (overlapX && Math.abs(t.y - (o.y + o.h)) < TOUCH) out.add(portrait ? "l" : "t");
+  }
+  return out;
+}
+
+/** Posiciones de sillas según forma y capacidad (w x h = medidas en pantalla); `blocked`: lados pegados a otra mesa. */
+function chairsFor(n: number, round: boolean, w: number, h: number, blocked: Set<Side> = new Set()): Chair[] {
   if (n < 1) return [];
   if (round) {
     return Array.from({ length: n }, (_, i) => {
@@ -72,10 +97,11 @@ function chairsFor(n: number, round: boolean, w: number, h: number): Chair[] {
     const [a, b]: [Side, Side] = w >= h ? ["t", "b"] : ["l", "r"];
     return [...sideChairs(a, Math.ceil(n / 2)), ...sideChairs(b, Math.floor(n / 2))];
   }
-  // Cuadrada: reparto por turnos entre los cuatro lados (2 en lados opuestos, 4 una por lado).
-  const sides: Side[] = ["t", "b", "l", "r"];
+  // Cuadrada: reparto por turnos entre los lados libres (2 en lados opuestos, 4 una por lado).
+  const free = (["t", "b", "l", "r"] as Side[]).filter((s) => !blocked.has(s));
+  const sides: Side[] = free.length ? free : ["t", "b", "l", "r"];
   const counts: Record<Side, number> = { t: 0, b: 0, l: 0, r: 0 };
-  for (let i = 0; i < n; i++) counts[sides[i % 4]]++;
+  for (let i = 0; i < n; i++) counts[sides[i % sides.length]]++;
   return sides.flatMap((s) => sideChairs(s, counts[s]));
 }
 
@@ -86,6 +112,7 @@ function chairsFor(n: number, round: boolean, w: number, h: number): Chair[] {
 export function FloorPlan({
   fixtures,
   tables,
+  groups = [],
   portrait = false,
   className,
   grid = "dots",
@@ -95,6 +122,7 @@ export function FloorPlan({
 }: {
   fixtures: PlanData["fixtures"];
   tables: PlanTable[];
+  groups?: PlanGroup[];
   portrait?: boolean;
   className?: string;
   grid?: "dots" | "lines";
@@ -102,7 +130,6 @@ export function FloorPlan({
   containerRef?: Ref<HTMLDivElement>;
   containerProps?: React.HTMLAttributes<HTMLDivElement>;
 }) {
-  const box = groupBox(tables, portrait);
   return (
     <div
       ref={containerRef}
@@ -130,15 +157,24 @@ export function FloorPlan({
           {f.label}
         </div>
       ))}
-      {box && (
-        <div
-          aria-hidden
-          style={box}
-          className="pointer-events-none absolute box-content -m-3 rounded-lg border-2 border-dashed border-sumeria/70 bg-sumeria/10 p-3"
-        />
-      )}
+      {groups.map((g) => {
+        const style = groupBox(tables.filter((t) => g.tables.includes(t.n)), portrait);
+        if (!style) return null;
+        const cls = cx(
+          "absolute box-content -m-3 rounded-lg border-2 p-3 transition-colors duration-150 motion-reduce:transition-none",
+          g.active ? "border-solid border-sumeria bg-sumeria/15" : "border-dashed border-sumeria/70 bg-sumeria/5 hover:bg-sumeria/15",
+        );
+        // Los cuadros van debajo de las mesas: tocando la mesa compañera también se elige el par.
+        return g.onClick ? (
+          <button key={g.key} type="button" style={style} onClick={g.onClick} aria-label={g.aria} aria-pressed={!!g.active} className={cx(cls, "cursor-pointer")} />
+        ) : (
+          <div key={g.key} aria-hidden style={style} className={cx(cls, "pointer-events-none")} />
+        );
+      })}
       {tables.map((t) => {
-        const chairs = t.capacity ? chairsFor(t.capacity, t.round, portrait ? t.h : t.w, portrait ? t.w : t.h) : [];
+        const chairs = t.capacity
+          ? chairsFor(t.capacity, t.round, portrait ? t.h : t.w, portrait ? t.w : t.h, t.round ? undefined : touchingSides(t, tables, portrait))
+          : [];
         return chairs.length ? (
           <div key={`c${t.n}`} aria-hidden style={boxStyle(t, portrait)} className="pointer-events-none absolute">
             {chairs.map((c, i) => (
@@ -197,9 +233,8 @@ function Grain({ round }: { round: boolean }) {
   );
 }
 
-/** Caja (en %) que abarca a las mesas de una combinación; null si hay menos de dos. */
-function groupBox(tables: PlanTable[], portrait: boolean): CSSProperties | null {
-  const g = tables.filter((t) => t.grouped);
+/** Caja (en %) que abarca a las mesas de un grupo; null si hay menos de dos. */
+function groupBox(g: PlanTable[], portrait: boolean): CSSProperties | null {
   if (g.length < 2) return null;
   const x1 = Math.min(...g.map((t) => t.x));
   const y1 = Math.min(...g.map((t) => t.y));

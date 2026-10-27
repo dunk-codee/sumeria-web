@@ -11,7 +11,7 @@ import { TAGS } from "@/lib/data";
 import { DEFAULT_SETTINGS } from "@/lib/defaults";
 import { addDays, todayISO } from "@/lib/dates";
 import { getDb, isUniqueViolation } from "@/lib/db";
-import { sizeFor } from "@/lib/plan";
+import { TABLE_BOX } from "@/lib/plan";
 import {
   categories,
   deliveryZones,
@@ -380,7 +380,8 @@ const planInput = z
     z.object({
       n: z.number().int().min(1).max(999),
       capacity: z.number().int().min(1).max(20),
-      shape: z.enum(TABLE_SHAPES),
+      // Se acepta por compatibilidad, pero siempre se guarda "square".
+      shape: z.enum(TABLE_SHAPES).optional(),
       x: z.number().min(0).max(100),
       y: z.number().min(0).max(70),
       location: z.string().trim().max(60),
@@ -417,18 +418,16 @@ export async function savePlan(input: z.input<typeof planInput>): Promise<Action
     await tx.delete(tables);
     if (list.length) {
       await tx.insert(tables).values(
-        list.map((t) => {
-          const s = sizeFor(t.capacity, t.shape);
-          return {
-            n: t.n,
-            capacity: t.capacity,
-            shape: t.shape,
-            x: Math.max(0, Math.min(100 - s.w, Math.round(t.x))),
-            y: Math.max(0, Math.min(70 - s.h, Math.round(t.y))),
-            ...s,
-            location: t.location || "Salón",
-          };
-        }),
+        // Todas las mesas son cuadradas y del mismo tamaño (ver `TABLE_SIZE`).
+        list.map((t) => ({
+          n: t.n,
+          capacity: t.capacity,
+          shape: "square" as const,
+          x: Math.max(0, Math.min(100 - TABLE_BOX.w, Math.round(t.x))),
+          y: Math.max(0, Math.min(70 - TABLE_BOX.h, Math.round(t.y))),
+          ...TABLE_BOX,
+          location: t.location || "Salón",
+        })),
       );
     }
   });
