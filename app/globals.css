@@ -1,0 +1,64 @@
+@import "tailwindcss";
+@config "../tailwind.config.ts";
+
+/* Márgenes y espaciados fluidos del prototipo (clamp sobre el ancho de la vista). */
+@utility px-gutter {
+  padding-inline: clamp(20px, 5vw, 72px);
+}
+@utility px-gutter-sm {
+  padding-inline: clamp(16px, 4vw, 56px);
+}
+@utility pt-section {
+  padding-top: clamp(56px, 7vw, 112px);
+}
+@utility pt-page {
+  padding-top: clamp(40px, 6vw, 88px);
+}
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+/* Trama diagonal que acompaña a las fotos placeholder. */
+@utility bg-stripes {
+  background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 8px);
+}
+@utility bg-dots {
+  background-color: #0e0d0b;
+  background-image: radial-gradient(rgba(244, 241, 236, 0.08) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+@layer base {
+  html {
+    scroll-padding-top: 112px;
+  }
+  body {
+    @apply bg-ink text-bone font-sans antialiased;
+  }
+  a {
+    @apply text-bone no-underline transition-colors hover:text-sumeria;
+  }
+  button,
+  input,
+  textarea,
+  select {
+    font-family: inherit;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  select option {
+    background: #1a1816;
+    color: #f1eee9;
+  }
+  input[type="date"] {
+    color-scheme: dark;
+  }
+  :focus-visible {
+    outline: 2px solid #f4f1ec;
+    outline-offset: 2px;
+  }
+}
