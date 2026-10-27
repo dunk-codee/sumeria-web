@@ -7,9 +7,9 @@ import { availabilityQuery } from "@/lib/validation";
 
 /**
  * GET /api/availability?date=YYYY-MM-DD&people=N
- * Devuelve el estado público de cada mesa y las combinaciones posibles (sin datos de clientes).
- * Respeta el rango de días reservables; para hoy después de las 19:30 devuelve `cutoff: true`
- * con ninguna mesa seleccionable. Siempre fresca.
+ * Devuelve el estado público de cada mesa y las opciones de lugar para el grupo (`tier` + `options`,
+ * ver `lib/combos.ts`), sin datos de clientes. Respeta el rango de días reservables; para hoy después
+ * de las 19:30 devuelve `cutoff: true` sin opciones. Siempre fresca.
  */
 export async function GET(request: NextRequest) {
   if (!dbConfigured()) return Response.json({ error: "Reservas online no disponibles" }, { status: 503 });
@@ -24,15 +24,16 @@ export async function GET(request: NextRequest) {
   }
 
   const [plan, statuses] = await Promise.all([getPlan(), tableStatuses(date)]);
-  const { tables, combos } = buildAvailability(plan.tables, statuses, people);
+  const { tables, tier, options } = buildAvailability(plan.tables, statuses, people);
   const cutoff = status === "cutoff";
   return Response.json(
     {
       date,
       people,
       cutoff,
-      tables: cutoff ? tables.map((t) => ({ ...t, selectable: false })) : tables,
-      combos: cutoff ? [] : combos,
+      tables,
+      tier: cutoff ? "none" : tier,
+      options: cutoff ? [] : options,
     },
     { headers: { "Cache-Control": "no-store" } },
   );

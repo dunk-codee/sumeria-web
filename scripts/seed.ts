@@ -10,7 +10,7 @@ import path from "node:path";
 import { sql } from "drizzle-orm";
 import { addDays, todayISO } from "../lib/dates";
 import { getDb } from "../lib/db";
-import { sizeFor } from "../lib/plan";
+import { TABLE_BOX } from "../lib/plan";
 import {
   categories,
   deliveryZones,
@@ -91,7 +91,7 @@ async function main() {
       );
     }
 
-    await tx.insert(tables).values(TABLES.map((t) => ({ n: t.n, capacity: t.cap, shape: t.shape, x: t.x, y: t.y, location: t.location, ...sizeFor(t.cap, t.shape) })));
+    await tx.insert(tables).values(TABLES.map((t) => ({ n: t.n, capacity: t.cap, shape: t.shape, x: t.x, y: t.y, location: t.location, ...TABLE_BOX })));
     await tx.insert(fixtures).values(FIXTURES.map((f) => ({ ...f, label: "label" in f ? f.label : null })));
     await tx.insert(deliveryZones).values(ZONES.map((z, i) => ({ ...z, position: i })));
     const { zones: _z, ...s } = DEFAULT_SETTINGS;

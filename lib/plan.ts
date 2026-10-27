@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { FixtureKind, TableShape } from "./schema";
+import type { FixtureKind } from "./schema";
 
 /** Alto lógico del plano: x va de 0 a 100 y y de 0 a 70. */
 export const PLAN_H = 70;
@@ -16,20 +16,13 @@ export function boxStyle(e: Box, portrait = false): CSSProperties {
     : { left: `${e.x}%`, top: `${(e.y / PLAN_H) * 100}%`, width: `${e.w}%`, height: `${(e.h / PLAN_H) * 100}%` };
 }
 
-/** Tamaño automático de la mesa según capacidad y forma. */
-export function sizeFor(cap: number, shape: TableShape): { w: number; h: number } {
-  if (shape === "round") {
-    const s = cap <= 2 ? 9 : cap <= 4 ? 11 : 13;
-    return { w: s, h: s };
-  }
-  if (shape === "square") {
-    const s = cap <= 4 ? 12 : 14;
-    return { w: s, h: s };
-  }
-  return { w: Math.round(8 + cap * 1.75), h: 10 };
-}
-
-export const SHAPE_LABELS: Record<TableShape, string> = { round: "Redonda", square: "Cuadrada", long: "Larga" };
+/**
+ * En el local todas las mesas son cuadradas y del mismo tamaño (pedido del cliente).
+ * `w`/`h` siguen guardados en la base, pero siempre valen esto.
+ * Como el plano es 10:7 y y va de 0 a 70, 12 × 12 unidades se ve cuadrada en pantalla.
+ */
+export const TABLE_SIZE = 12;
+export const TABLE_BOX = { w: TABLE_SIZE, h: TABLE_SIZE } as const;
 
 export const FIXTURE_CLASS: Record<FixtureKind, string> = {
   hatch: "border border-bone/30 bg-[repeating-linear-gradient(45deg,rgba(244,241,236,.07)_0_1px,transparent_1px_8px)]",

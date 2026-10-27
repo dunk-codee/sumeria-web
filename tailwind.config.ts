@@ -31,6 +31,10 @@ export default {
           deep: "#A3362A",
         },
         kraft: { DEFAULT: "#D8BC93", ink: "#21170E", bag: "#C29A6B" },
+        // Avisos positivos ("Hay lugar"): borde/ícono y fondo oscuro verdoso. El texto va en `bone`.
+        ok: { DEFAULT: "#6FBF7A", bg: "#121C14" },
+        // Fondo de avisos de error/sin lugar (con borde `sumeria`).
+        alert: { bg: "#1A0F0E" },
         line: "rgba(244,241,236,.22)",
         // Panel de administración
         panel: {

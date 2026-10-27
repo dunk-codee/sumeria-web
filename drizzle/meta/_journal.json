@@ -15,6 +15,13 @@
       "when": 1793116326783,
       "tag": "0001_clammy_kat_farrell",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793137508774,
+      "tag": "0002_mesas_cuadradas",
+      "breakpoints": true
     }
   ]
 }

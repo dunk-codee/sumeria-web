@@ -1,15 +1,22 @@
 /** Plano del salón, elementos fijos y zonas de delivery iniciales (seed y modo sin base). */
 import type { TableShape } from "../../lib/schema";
 
+/*
+ * Todas cuadradas y del mismo tamaño (TABLE_SIZE = 12). Las sueltas son para 4; las que están pegadas de a dos
+ * son para 3 cada una (un lado contra la otra), así el par sienta 6. Misma distribución que la migración 0002.
+ */
 export const TABLES: { n: number; cap: number; shape: TableShape; x: number; y: number; location: string }[] = [
-  { n: 1, cap: 2, shape: "round", x: 5, y: 6, location: "Salón, contra la pared" },
-  { n: 2, cap: 2, shape: "round", x: 19, y: 6, location: "Salón, contra la pared" },
-  { n: 3, cap: 4, shape: "square", x: 34, y: 5, location: "Salón" },
-  { n: 4, cap: 6, shape: "long", x: 51, y: 6, location: "Salón, cerca de la barra" },
-  { n: 5, cap: 4, shape: "square", x: 5, y: 27, location: "Salón" },
-  { n: 6, cap: 4, shape: "square", x: 23, y: 27, location: "Centro del salón" },
-  { n: 7, cap: 8, shape: "long", x: 40, y: 28, location: "Mesa larga" },
-  { n: 8, cap: 2, shape: "round", x: 14, y: 52, location: "Junto al ventanal" },
+  { n: 1, cap: 3, shape: "square", x: 4, y: 4, location: "Salón, contra la pared" },
+  { n: 2, cap: 3, shape: "square", x: 16, y: 4, location: "Salón, contra la pared" },
+  { n: 3, cap: 4, shape: "square", x: 34, y: 4, location: "Salón" },
+  { n: 4, cap: 4, shape: "square", x: 50, y: 4, location: "Salón" },
+  { n: 5, cap: 4, shape: "square", x: 4, y: 25, location: "Salón" },
+  { n: 6, cap: 3, shape: "square", x: 22, y: 25, location: "Centro del salón" },
+  { n: 7, cap: 3, shape: "square", x: 34, y: 25, location: "Centro del salón" },
+  { n: 8, cap: 4, shape: "square", x: 50, y: 25, location: "Cerca de la barra" },
+  { n: 9, cap: 3, shape: "square", x: 4, y: 46, location: "Junto al ventanal" },
+  { n: 10, cap: 3, shape: "square", x: 16, y: 46, location: "Junto al ventanal" },
+  { n: 11, cap: 4, shape: "square", x: 40, y: 46, location: "Salón" },
 ];
 
 export const FIXTURES = [

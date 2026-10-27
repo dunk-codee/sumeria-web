@@ -4,10 +4,9 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { savePlan } from "@/app/admin/actions";
 import type { PlanData } from "@/lib/data";
 import { cx } from "@/lib/format";
-import { PLAN_H, SHAPE_LABELS, sizeFor } from "@/lib/plan";
-import { TABLE_SHAPES, type TableShape } from "@/lib/schema";
+import { PLAN_H, TABLE_BOX } from "@/lib/plan";
 import { FloorPlan, type PlanTable } from "../FloorPlan";
-import { AButton, Card, Field, inputCls, Segmented, useRun } from "./ui";
+import { AButton, Card, Field, inputCls, useRun } from "./ui";
 
 type T = PlanData["tables"][number];
 type Drag = { n: number; sx: number; sy: number; ox: number; oy: number; rect: DOMRect; moved: boolean };
@@ -34,8 +33,7 @@ export function PlanEditor({ initial, withUpcoming }: { initial: PlanData; withU
       ts.map((t) => {
         if (t.n !== n) return t;
         const nt = { ...t, ...patch };
-        const s = sizeFor(nt.capacity, nt.shape);
-        return { ...nt, ...s, x: Math.min(nt.x, 100 - s.w), y: Math.min(nt.y, PLAN_H - s.h) };
+        return { ...nt, ...TABLE_BOX, x: Math.min(nt.x, 100 - TABLE_BOX.w), y: Math.min(nt.y, PLAN_H - TABLE_BOX.h) };
       }),
     );
   };
@@ -59,9 +57,10 @@ export function PlanEditor({ initial, withUpcoming }: { initial: PlanData; withU
     drag.current = null;
   };
 
-  const add = (capacity: number, shape: TableShape) => {
+  // Todas las mesas son cuadradas y del mismo tamaño; una nueva arranca para 4.
+  const add = () => {
     const n = Math.max(0, ...tables.map((t) => t.n)) + 1;
-    setTables((ts) => [...ts, { n, capacity, shape, x: 26, y: 46, location: "Salón", ...sizeFor(capacity, shape) }]);
+    setTables((ts) => [...ts, { n, capacity: 4, shape: "square", x: 26, y: 46, location: "Salón", ...TABLE_BOX }]);
     setSel(n);
     setDirty(true);
   };
@@ -158,26 +157,17 @@ export function PlanEditor({ initial, withUpcoming }: { initial: PlanData; withU
         <div className="flex min-w-[260px] flex-[0_1_300px] flex-col gap-3.5">
           <Card className="flex flex-col gap-2.5 p-4">
             <span className="text-sm font-semibold">Agregar mesa</span>
-            <div className="grid grid-cols-4 gap-1.5">
-              {(
-                [
-                  [2, "round"],
-                  [4, "square"],
-                  [6, "long"],
-                  [8, "long"],
-                ] as const
-              ).map(([cap, shape]) => (
-                <button
-                  key={cap}
-                  type="button"
-                  onClick={() => add(cap, shape)}
-                  className="flex h-14 flex-col items-center justify-center gap-0.5 rounded border border-bone/20 hover:border-panel-text"
-                >
-                  <span className="font-display text-xl leading-none font-semibold">{cap}</span>
-                  <span className="text-[11px] text-panel-muted">lugares</span>
-                </button>
-              ))}
-            </div>
+            <button
+              type="button"
+              onClick={add}
+              className="flex h-14 items-center justify-center gap-2 rounded border border-bone/20 hover:border-panel-text"
+            >
+              <span className="font-display text-xl leading-none font-semibold">+</span>
+              <span className="text-[13px]">Mesa cuadrada para 4</span>
+            </button>
+            <span className="text-xs text-panel-muted">
+              Si la pegás a otra, poné 3 lugares en cada una: las sillas del lado que se tocan no se dibujan.
+            </span>
           </Card>
           <Card className={cx("flex flex-col gap-3 p-4", es && "border-sumeria!")}>
             {!es ? (
@@ -209,10 +199,6 @@ export function PlanEditor({ initial, withUpcoming }: { initial: PlanData; withU
                       +
                     </button>
                   </div>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[13px] font-semibold text-sand">Forma</span>
-                  <Segmented<TableShape> value={es.shape} onChange={(shape) => upd(es.n, { shape })} options={TABLE_SHAPES.map((k) => [k, SHAPE_LABELS[k]] as const)} />
                 </div>
                 <Field label="Ubicación (se muestra al reservar)">
                   <input value={es.location} onChange={(e) => upd(es.n, { location: e.target.value })} maxLength={60} className={inputCls} />

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { AdminReservation } from "@/lib/admin-data";
+import { isApart } from "@/lib/combos";
 import type { PlanData } from "@/lib/data";
 import { DOW, longDate, parts } from "@/lib/dates";
 import { cx, tablesLabel } from "@/lib/format";
@@ -170,7 +171,13 @@ export function ReservationsBoard({ date, view, days, today, week, plan, address
                     {r.tables.length > 1 ? (
                       <span className="flex flex-col gap-0.5 text-[13px]">
                         <span className="font-semibold">{tablesLabel(r.tables)}</span>
-                        <span className="font-mono text-[10px] text-panel-muted uppercase">Combinadas</span>
+                        {isApart(r.tables, plan.tables) ? (
+                          <span className="self-start rounded-xs border border-dashed border-kraft px-1.5 py-0.5 font-mono text-[10px] text-kraft uppercase">
+                            Separadas: juntarlas
+                          </span>
+                        ) : (
+                          <span className="font-mono text-[10px] text-panel-muted uppercase">Juntas</span>
+                        )}
                       </span>
                     ) : (
                       <select
@@ -270,7 +277,14 @@ export function ReservationsBoard({ date, view, days, today, week, plan, address
                       {selR.tables.length > 1 && (
                         <>
                           <dt className="text-panel-muted">Mesas</dt>
-                          <dd className="m-0">{selR.tables.join(" + ")} (combinadas)</dd>
+                          <dd className="m-0">
+                            {selR.tables.join(" + ")}{" "}
+                            {isApart(selR.tables, plan.tables) ? (
+                              <span className="font-semibold text-kraft">(separadas: hay que juntarlas)</span>
+                            ) : (
+                              "(juntas)"
+                            )}
+                          </dd>
                         </>
                       )}
                       <dt className="text-panel-muted">Cliente</dt>

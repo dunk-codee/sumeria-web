@@ -1,7 +1,6 @@
-import { inArray } from "drizzle-orm";
 import { takenTables } from "@/lib/availability";
 import { bookingStatus, BOOKING_ERRORS } from "@/lib/booking";
-import { isComboViable } from "@/lib/combos";
+import { isOffered, seatingOptions } from "@/lib/combos";
 import { getSettings } from "@/lib/data";
 import { dbConfigured, getDb, isUniqueViolation } from "@/lib/db";
 import { reservations, tables } from "@/lib/schema";
@@ -22,7 +21,8 @@ const TAKEN = "Alguien acaba de pedir esa mesa. Elegí otra.";
 
 /**
  * POST /api/reservations — crea una reserva web en estado Pendiente.
- * Una mesa, o varias combinadas (una fila por mesa con el mismo `group_id`).
+ * Una mesa, o dos juntas (una fila por mesa con el mismo `group_id`). Solo acepta una de las opciones que
+ * ofrece `seatingOptions` con las mesas libres de ese día (400 si no).
  * Rechaza fechas fuera del rango reservable (400) y, para hoy desde las 19:30, con 422 `cutoff`.
  * Corre en transacción; si alguna mesa ya fue tomada (índice único) responde 409.
  */
@@ -54,15 +54,16 @@ export async function POST(request: Request) {
   const db = await getDb();
   try {
     const created = await db.transaction(async (tx) => {
-      const found = await tx.select().from(tables).where(inArray(tables.n, r.tables));
-      if (found.length !== r.tables.length) throw new HttpError(400, "La mesa no existe.");
-      if (found.length === 1) {
-        if (found[0].capacity < r.people) throw new HttpError(400, `La mesa ${found[0].n} es para ${found[0].capacity} personas.`);
-      } else if (!isComboViable(found, r.people)) {
-        throw new HttpError(400, "Esas mesas no se pueden combinar para ese grupo.");
-      }
+      const all = await tx.select().from(tables);
+      if (r.tables.some((n) => !all.some((t) => t.n === n))) throw new HttpError(400, "La mesa no existe.");
 
-      if ((await takenTables(tx, r.date, r.tables)).length) throw new HttpError(409, TAKEN);
+      const taken = new Set(await takenTables(tx, r.date, all.map((t) => t.n)));
+      if (r.tables.some((n) => taken.has(n))) throw new HttpError(409, TAKEN);
+      // Misma regla que muestra el sitio: solo se acepta una de las opciones ofrecidas para ese grupo.
+      const { options } = seatingOptions(all.filter((t) => !taken.has(t.n)), r.people);
+      if (!isOffered(options, r.tables)) {
+        throw new HttpError(400, "Esas mesas no están disponibles para ese grupo. Elegí otra opción.", "unavailable");
+      }
 
       const groupId = r.tables.length > 1 ? crypto.randomUUID() : null;
       const rows = await tx
