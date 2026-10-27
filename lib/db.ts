@@ -11,6 +11,14 @@ export type DB = PgDatabase<PgQueryResultHKT, typeof schema>;
  */
 const globalForDb = globalThis as unknown as { __sumeriaDb?: Promise<DB> };
 
+/**
+ * ¿Hay base disponible? En producción hace falta `DATABASE_URL`; sin ella el sitio
+ * corre en "modo sin base" (carta y datos estáticos, sin reservas online ni panel).
+ */
+export function dbConfigured(): boolean {
+  return Boolean(process.env.DATABASE_URL) || process.env.NODE_ENV !== "production" || process.env.SUMERIA_ALLOW_PGLITE === "1";
+}
+
 async function connect(): Promise<DB> {
   const url = process.env.DATABASE_URL;
   if (url) {

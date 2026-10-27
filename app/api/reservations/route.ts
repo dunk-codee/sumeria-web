@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { getDb, isUniqueViolation } from "@/lib/db";
+import { dbConfigured, getDb, isUniqueViolation } from "@/lib/db";
 import { reservations, tables } from "@/lib/schema";
 import { turnOf } from "@/lib/turns";
 import { inBookingWindow, reservationInput } from "@/lib/validation";
@@ -18,6 +18,9 @@ class HttpError extends Error {
  * Corre en transacción; si la mesa ya fue tomada (índice único) responde 409.
  */
 export async function POST(request: Request) {
+  if (!dbConfigured()) {
+    return Response.json({ error: "Las reservas online no están disponibles. Escribinos por WhatsApp." }, { status: 503 });
+  }
   let body: unknown;
   try {
     body = await request.json();

@@ -172,7 +172,7 @@ pará `npm run dev` antes de correr `db:seed` o `next build`. Para hacer el buil
 
 | Variable | Uso |
 | --- | --- |
-| `DATABASE_URL` | Conexión a Neon. Obligatoria en producción (y en el build de Vercel: las páginas públicas se prerenderizan leyendo la base) |
+| `DATABASE_URL` | Conexión a Neon. **Sin ella en producción el sitio corre en "modo sin base"** (ver §5). Con ella, tiene que estar disponible también en el build |
 | `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | Fotos. `next.config.ts` expone cloud name y api key como `NEXT_PUBLIC_*` |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Acceso al panel |
 | `AUTH_SECRET` | Firma de la cookie (≥ 32 caracteres) |
@@ -196,6 +196,13 @@ pará `npm run dev` antes de correr `db:seed` o `next build`. Para hacer el buil
   (`orderMessage` en `lib/whatsapp.ts`) y abre `wa.me/<whatsapp del local>`.
 - **Fotos**: `Photo.tsx` pinta siempre el fondo placeholder cálido y encima la foto (`CldImage` si hay `public_id`, si no `next/image`).
   `photo_cutout = true` → la foto (PNG/WebP sin fondo) se muestra entera, sin recortar.
+- **Modo sin base** (producción sin `DATABASE_URL`, que es como está hoy en Vercel): `dbConfigured()` en `lib/db.ts` da `false` y
+  - `lib/data.ts` devuelve los datos estáticos de `lib/static-data.ts` (carta real, plano, zonas y datos del local, sacados de
+    `scripts/data/` igual que el seed; mismos ids, así el carrito guardado sigue valiendo al conectar la base);
+  - no hay novedades; `/reservas` muestra "Reservá por WhatsApp"; `/api/availability` y `/api/reservations` responden 503;
+  - `/admin/login` y el panel muestran "Falta conectar la base de datos".
+  En desarrollo nunca entra en este modo (usa PGlite). **Para activar todo**: crear Neon, `db:migrate` + `db:seed` contra Neon,
+  cargar `DATABASE_URL`, `ADMIN_*` y `AUTH_SECRET` en Vercel y redeployar (en ese orden: el build prerenderiza leyendo la base).
 - **Auth**: `proxy.ts` redirige a `/admin/login` sin sesión (chequeo optimista); `requireAdmin()` revalida en cada página y acción.
 
 ---
@@ -222,6 +229,8 @@ con plano interactivo, nosotros con mapa), panel completo (login, inicio, reserv
 walk-ins, productos con editor y vista previa, categorías con orden/visibilidad/inicio, eventos con vista previa, editor de plano
 con drag y flechas, datos del local), APIs, migraciones, seed con la carta real.
 `typecheck`, `lint` y `build` pasan.
+
+**Deploy actual**: Vercel en **modo sin base** (sin Neon todavía): carta y pedidos por WhatsApp funcionan; reservas online y panel, no.
 
 
 ## 8. Próximos pasos (en orden sugerido)

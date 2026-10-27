@@ -1,8 +1,9 @@
 import { and, asc, eq, gte, lte } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 import { todayISO } from "./dates";
-import { getDb } from "./db";
+import { dbConfigured, getDb } from "./db";
 import { DEFAULT_SETTINGS } from "./defaults";
+import { STATIC_MENU, STATIC_PLAN, STATIC_SETTINGS } from "./static-data";
 import {
   categories,
   deliveryZones,
@@ -17,6 +18,7 @@ import {
 /**
  * Lecturas públicas cacheadas. Cada una lleva un tag que el panel expira
  * (`updateTag`) al guardar, así el sitio refleja los cambios sin redeploy.
+ * Sin base configurada (producción sin DATABASE_URL) devuelven los datos estáticos del seed.
  */
 export const TAGS = { menu: "menu", events: "events", plan: "plan", settings: "settings" } as const;
 
@@ -39,6 +41,7 @@ export async function getMenu(): Promise<MenuCategory[]> {
   "use cache";
   cacheLife("max");
   cacheTag(TAGS.menu);
+  if (!dbConfigured()) return STATIC_MENU;
   const db = await getDb();
   const cats = await db.select().from(categories).where(eq(categories.visible, true)).orderBy(asc(categories.position), asc(categories.id));
   const prods = await db.select().from(products).orderBy(asc(products.position), asc(products.id));
@@ -79,6 +82,7 @@ export async function getSettings(): Promise<SiteSettings> {
   "use cache";
   cacheLife("max");
   cacheTag(TAGS.settings);
+  if (!dbConfigured()) return STATIC_SETTINGS;
   const db = await getDb();
   const [row] = await db.select().from(settings).where(eq(settings.id, 1));
   const zones = await db.select().from(deliveryZones).orderBy(asc(deliveryZones.position), asc(deliveryZones.id));
@@ -114,6 +118,7 @@ export async function getEvents(): Promise<PublicEvent[]> {
   "use cache";
   cacheLife("hours");
   cacheTag(TAGS.events);
+  if (!dbConfigured()) return [];
   const today = todayISO();
   const db = await getDb();
   const rows = await db
@@ -133,6 +138,7 @@ export async function getPlan(): Promise<PlanData> {
   "use cache";
   cacheLife("max");
   cacheTag(TAGS.plan);
+  if (!dbConfigured()) return STATIC_PLAN;
   const db = await getDb();
   const t = await db.select().from(tables).orderBy(asc(tables.n));
   const f = await db.select().from(fixtures).orderBy(asc(fixtures.id));

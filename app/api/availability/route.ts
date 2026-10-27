@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { tableStatuses } from "@/lib/availability";
 import { getPlan } from "@/lib/data";
+import { dbConfigured } from "@/lib/db";
 import { availabilityQuery } from "@/lib/validation";
 
 /**
@@ -8,6 +9,7 @@ import { availabilityQuery } from "@/lib/validation";
  * Devuelve el estado público de cada mesa (sin datos de clientes).
  */
 export async function GET(request: NextRequest) {
+  if (!dbConfigured()) return Response.json({ error: "Reservas online no disponibles" }, { status: 503 });
   const parsed = availabilityQuery.safeParse(Object.fromEntries(request.nextUrl.searchParams));
   if (!parsed.success) return Response.json({ error: "Parámetros inválidos" }, { status: 400 });
   const { date, turn, people } = parsed.data;
