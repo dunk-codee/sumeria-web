@@ -11,6 +11,12 @@
 @utility pt-section {
   padding-top: clamp(56px, 7vw, 112px);
 }
+@utility pb-section {
+  padding-bottom: clamp(56px, 7vw, 112px);
+}
+@utility py-section {
+  padding-block: clamp(56px, 7vw, 112px);
+}
 @utility pt-page {
   padding-top: clamp(40px, 6vw, 88px);
 }

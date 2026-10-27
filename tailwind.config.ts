@@ -22,6 +22,7 @@ export default {
         page: "#1A1918",
         bone: "#F4F1EC",
         sand: "#D9D3CB",
+        silver: "#C7C4C4",
         stone: { 2: "#BDB6AD", 3: "#A39B91", 4: "#7E7770", 5: "#8A837B", 6: "#6E6862" },
         sumeria: {
           DEFAULT: "#D75B4B",
@@ -47,6 +48,7 @@ export default {
         sans: ["var(--font-instrument)", "Instrument Sans", "system-ui", "sans-serif"],
         mono: ["var(--font-plex-mono)", "IBM Plex Mono", "monospace"],
         script: ["var(--font-script)", "Mrs Saint Delafield", "cursive"],
+        jost: ["var(--font-jost)", "Jost", "sans-serif"],
       },
       borderRadius: {
         DEFAULT: "3px",

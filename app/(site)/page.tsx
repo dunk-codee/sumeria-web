@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import { Hero } from "@/components/home/Hero";
 import { Photo } from "@/components/Photo";
 import { button, ButtonLink, Eyebrow, ExternalButton, SectionTitle, typeTag, TYPE_LABELS } from "@/components/ui";
 import { RedX } from "@/components/XMark";
@@ -18,54 +18,12 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* Hero */}
-      <section className="relative flex h-[clamp(600px,56vw,800px)] items-end overflow-hidden">
-        <Image
-          src="/fotos/hero-sushi.jpg"
-          alt="Rolls de salmón sobre plato negro y mesa de madera oscura"
-          fill
-          priority
-          quality={85}
-          sizes="100vw"
-          className="object-cover object-[84%_50%] d:object-[60%_50%]"
-        />
-        {/* Degradés: legibilidad del logo (izquierda/abajo) y fundido con la página. */}
-        <div className="absolute inset-0 hidden bg-[linear-gradient(90deg,rgba(11,10,9,.8)_0%,rgba(11,10,9,.35)_45%,rgba(11,10,9,0)_70%)] d:block" />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(11,10,9,.35)_0%,rgba(11,10,9,0)_25%,rgba(11,10,9,.55)_60%,#0B0A09_100%)]" />
-        <div className="relative mx-auto flex w-full max-w-[1280px] flex-col gap-[22px] px-gutter pb-[clamp(36px,5vw,80px)]">
-          <div className="flex w-[min(100%,440px)] flex-col gap-4">
-            <h1 className="m-0">
-              <Image src="/brand/sumeria-logo.png" alt="Sumeria Sushi" width={1187} height={154} priority className="block h-auto w-full" />
-            </h1>
-            <div className="flex items-center gap-3">
-              <span className="h-px flex-1 bg-bone/45" />
-              <span className="font-display text-[clamp(12px,1.2vw,15px)] tracking-[.32em] whitespace-nowrap uppercase">Sushi · Rolls · Salads · Bagels</span>
-              <span className="h-px flex-1 bg-bone/45" />
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2.5">
-            <ButtonLink href="/carta" className="max-w-60 flex-[1_1_160px]">
-              Ver la carta
-            </ButtonLink>
-            <ButtonLink href="/reservas" variant="outline" className="max-w-60 flex-[1_1_160px]">
-              Reservar mesa
-            </ButtonLink>
-          </div>
-        </div>
-      </section>
-
-      <div className="flex flex-wrap items-center justify-center gap-x-[22px] gap-y-2 border-y border-bone/12 px-5 py-[18px] text-center font-display text-[clamp(14px,1.3vw,17px)] tracking-[.12em] uppercase">
-        <span>Todos los días desde las {salon.from}</span>
-        <RedX size={9} stroke={4} />
-        <span>Delivery &amp; take away</span>
-        <RedX size={9} stroke={4} />
-        <span>{settings.address}</span>
-      </div>
+      <Hero salonFrom={salon.from} address={settings.address} />
 
       {/* Lo que se viene */}
       {feat && (
         <section className="px-gutter pt-section">
-          <div className="mx-auto flex max-w-[1280px] flex-col gap-[22px]">
+          <div className="mx-auto flex max-w-[1280px] flex-col gap-[clamp(24px,3vw,36px)]">
             <Eyebrow>Lo que se viene</Eyebrow>
             <article className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,380px),1fr))] border border-bone/10 bg-coal">
               <Photo placeholder={feat.placeholder} publicId={feat.photoPublicId} url={feat.photoUrl} alt={feat.title} className="min-h-[300px]" sizes="(max-width: 900px) 100vw, 640px" ratio={[16, 10]}>
@@ -123,7 +81,7 @@ export default async function HomePage() {
       {/* Categorías estrella */}
       {stars.length > 0 && (
         <section className="pt-section">
-          <div className="mx-auto flex max-w-[1280px] flex-col gap-[22px]">
+          <div className="mx-auto flex max-w-[1280px] flex-col gap-[clamp(24px,3vw,36px)]">
             <div className="flex flex-wrap items-end justify-between gap-4 px-gutter">
               <div className="flex flex-col gap-2.5">
                 <Eyebrow>Carta</Eyebrow>
@@ -133,11 +91,15 @@ export default async function HomePage() {
                 Carta completa →
               </Link>
             </div>
-            <div className="no-scrollbar grid auto-cols-[minmax(210px,1fr)] grid-flow-col gap-2.5 overflow-x-auto px-gutter pb-1.5">
+            <div className="no-scrollbar grid auto-cols-[minmax(220px,1fr)] grid-flow-col gap-3 overflow-x-auto px-gutter py-2">
               {stars.map((c) => {
                 const p = c.products.find((x) => x.photoUrl || x.photoPublicId) ?? c.products[0];
                 return (
-                  <Link key={c.id} href={`/carta#cat-${c.slug}`} className="group relative block aspect-[3/4] overflow-hidden rounded-xs hover:outline hover:outline-bone">
+                  <Link
+                    key={c.id}
+                    href={`/carta#cat-${c.slug}`}
+                    className="group relative block aspect-[4/5] overflow-hidden rounded-xs outline-2 -outline-offset-2 outline-transparent transition-[outline-color] hover:outline-bone focus-visible:outline-bone"
+                  >
                     <Photo
                       placeholder={p.placeholder}
                       publicId={p.photoPublicId}
@@ -145,11 +107,15 @@ export default async function HomePage() {
                       cutout={p.photoCutout}
                       alt=""
                       className="h-full w-full"
-                      imgClassName="p-[14%]! pb-[28%]! transition-transform duration-500 group-hover:scale-105"
-                      sizes="260px"
-                      ratio={[3, 4]}
+                      imgClassName={cx(
+                        "transition-transform duration-500 group-hover:scale-105",
+                        p.photoCutout && "p-[12%]! pt-[16%]! pb-[34%]!",
+                      )}
+                      sizes="280px"
+                      ratio={[4, 5]}
                     />
-                    <span className="absolute inset-x-4 bottom-4 flex items-center gap-2.5 font-display text-[34px] leading-none font-semibold text-bone uppercase">
+                    <span aria-hidden className="absolute inset-x-0 bottom-0 h-[45%] bg-linear-to-t from-black/85 via-black/40 to-transparent" />
+                    <span className="absolute inset-x-5 bottom-5 flex items-center gap-2.5 font-display text-[clamp(26px,2.4vw,32px)] leading-none font-semibold text-bone uppercase">
                       <RedX size={14} stroke={4} />
                       {c.name}
                     </span>
@@ -195,7 +161,7 @@ export default async function HomePage() {
 
       {/* Ustedes */}
       <section className="px-gutter py-section">
-        <div className="mx-auto flex max-w-[1280px] flex-col gap-[22px]">
+        <div className="mx-auto flex max-w-[1280px] flex-col gap-[clamp(24px,3vw,36px)]">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="flex flex-col gap-2.5">
               <Eyebrow>Ustedes</Eyebrow>
