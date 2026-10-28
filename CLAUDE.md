@@ -240,6 +240,15 @@ pará `npm run dev` antes de correr `db:seed` o `next build`. Para hacer el buil
     botón a WhatsApp y `POST /api/reservations` responde 422 `code: "cutoff"`.
   - Las reservas web entran como `pend`; el local confirma desde el panel (abre `wa.me/549<tel>` con el mensaje y pasa a `conf`).
   - Web: hasta 8 personas. El panel usa `/api/admin/availability` (sin las reglas del sitio).
+- **Carta** (`app/(site)/carta/page.tsx` + `CartaFilter` / `CartaSection` en `components/site/CategoryBar.tsx`): filtro sticky
+  con **"Todas"** (todas las categorías seguidas) y una opción por categoría (muestra **solo** esa). Al tocar un filtro vuelve al
+  principio de la carta (la barra queda pegada al header) y la lista entra con un fundido corto. La categoría va en el hash
+  (`/carta#cat-rolls`): los links del inicio y de las novedades abren la carta ya filtrada. La opción activa lleva la X que se
+  dibuja trazo por trazo (`NavX`, compartida con el header) en un hueco fijo, así el texto no se mueve. Cuando la barra queda
+  pegada al header cambia a fondo `coal` con sombra, para que se note la división entre nav y filtros.
+  Botón de agregar (`CartControl`): **sello hanko** como el del header. Sin ítems: "Agregar" + sello punteado rojo con "+"
+  (mobile: solo el sello); al agregar el sello se estampa con una onda de tinta y queda − [cantidad en el sello] +. Cada cambio
+  vuelve a estampar; si la cantidad viene del pedido guardado, aparece quieto. El foco pasa a "+" al agregar y vuelve a "Agregar" al llegar a 0.
 - **Carrito**: estado en `SiteProvider`, persistido en `localStorage` (`sumeria:pedido`). Arma el mensaje exacto del handoff
   (`orderMessage` en `lib/whatsapp.ts`) y abre `wa.me/<whatsapp del local>`.
 - **Fotos**: `Photo.tsx` pinta siempre el fondo placeholder cálido y encima la foto (`CldImage` si hay `public_id`, si no `next/image`).
@@ -303,7 +312,7 @@ pará `npm run dev` antes de correr `db:seed` o `next build`. Para hacer el buil
 
 ## 7. Estado actual
 
-**Hecho y probado**: sitio completo (inicio, carta con scroll-spy, carrito → WhatsApp, novedades con filtros, reserva en 4 pasos
+**Hecho y probado**: sitio completo (inicio, carta con filtro por categoría, carrito → WhatsApp, novedades con filtros, reserva en 4 pasos
 con plano interactivo, nosotros con mapa), panel completo (login, inicio, reservas lista/plano con todas las acciones, carga manual,
 walk-ins, productos con editor y vista previa, categorías con orden/visibilidad/inicio, eventos con vista previa, editor de plano
 con drag y flechas, datos del local), APIs, migraciones, seed con la carta real.
