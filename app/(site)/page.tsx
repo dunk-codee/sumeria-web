@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FeaturedReveal } from "@/components/home/FeaturedReveal";
 import { Hero } from "@/components/home/Hero";
 import { Photo } from "@/components/Photo";
 import { button, ButtonLink, Eyebrow, ExternalButton, SectionTitle, typeTag, TYPE_LABELS } from "@/components/ui";
@@ -8,6 +9,9 @@ import { ctaHref, eventDateParts, featuredEvent } from "@/lib/events";
 import { cx } from "@/lib/format";
 import { hoursOf } from "@/lib/hours";
 import { placeholderBg } from "@/lib/placeholders";
+
+/** Estado inicial de lo que aparece al scrollear (lo anima `FeaturedReveal`). */
+const HIDDEN = "opacity-0 motion-reduce:opacity-100!";
 
 export default async function HomePage() {
   const [menu, events, settings] = await Promise.all([getMenu(), getEvents(), getSettings()]);
@@ -81,49 +85,56 @@ export default async function HomePage() {
       {/* Categorías estrella */}
       {stars.length > 0 && (
         <section className="pt-section">
-          <div className="mx-auto flex max-w-[1280px] flex-col gap-[clamp(24px,3vw,36px)]">
-            <div className="flex flex-wrap items-end justify-between gap-4 px-gutter">
-              <div className="flex flex-col gap-2.5">
-                <Eyebrow>Carta</Eyebrow>
-                <SectionTitle>¿Qué pedimos hoy?</SectionTitle>
+          <FeaturedReveal>
+            <div className="mx-auto flex max-w-[1280px] flex-col gap-[clamp(24px,3vw,36px)]">
+              <div className="flex flex-wrap items-end justify-between gap-4 px-gutter">
+                <div data-reveal className={cx("flex flex-col gap-2.5", HIDDEN)}>
+                  <Eyebrow>Carta</Eyebrow>
+                  <SectionTitle>¿Qué pedimos hoy?</SectionTitle>
+                </div>
+                <Link data-reveal href="/carta" className={cx(button({ variant: "text", size: "md" }), "px-0!", HIDDEN)}>
+                  Carta completa →
+                </Link>
               </div>
-              <Link href="/carta" className={cx(button({ variant: "text", size: "md" }), "px-0!")}>
-                Carta completa →
-              </Link>
+              {/* Mobile: las tarjetas encajan al deslizar y el borde derecho se desvanece hasta llegar al final (data-end). */}
+              <div
+                data-rail
+                className="no-scrollbar grid snap-x snap-mandatory scroll-px-[clamp(20px,5vw,72px)] auto-cols-[72%] grid-flow-col gap-3 overflow-x-auto px-gutter py-2 [mask-image:linear-gradient(to_right,#000_82%,transparent)] data-[end=true]:[mask-image:none] sm:auto-cols-[minmax(220px,1fr)] d:snap-none d:[mask-image:none]"
+              >
+                {stars.map((c) => {
+                  const p = c.products.find((x) => x.photoUrl || x.photoPublicId) ?? c.products[0];
+                  return (
+                    <Link
+                      key={c.id}
+                      data-rail-item
+                      href={`/carta#cat-${c.slug}`}
+                      className="group relative block snap-start opacity-0 motion-reduce:opacity-100! aspect-[4/5] overflow-hidden rounded-xs outline-2 -outline-offset-2 outline-transparent transition-[outline-color] hover:outline-bone focus-visible:outline-bone"
+                    >
+                      <Photo
+                        placeholder={p.placeholder}
+                        publicId={p.photoPublicId}
+                        url={p.photoUrl}
+                        cutout={p.photoCutout}
+                        alt=""
+                        className="h-full w-full"
+                        imgClassName={cx(
+                          "transition-transform duration-500 group-hover:scale-105",
+                          p.photoCutout && "p-[12%]! pt-[16%]! pb-[34%]!",
+                        )}
+                        sizes="280px"
+                        ratio={[4, 5]}
+                      />
+                      <span aria-hidden className="absolute inset-x-0 bottom-0 h-[45%] bg-linear-to-t from-black/85 via-black/40 to-transparent" />
+                      <span className="absolute inset-x-5 bottom-5 flex items-center gap-2.5 font-display text-[clamp(26px,2.4vw,32px)] leading-none font-semibold text-bone uppercase">
+                        <RedX size={14} stroke={4} />
+                        {c.name}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
-            <div className="no-scrollbar grid auto-cols-[minmax(220px,1fr)] grid-flow-col gap-3 overflow-x-auto px-gutter py-2">
-              {stars.map((c) => {
-                const p = c.products.find((x) => x.photoUrl || x.photoPublicId) ?? c.products[0];
-                return (
-                  <Link
-                    key={c.id}
-                    href={`/carta#cat-${c.slug}`}
-                    className="group relative block aspect-[4/5] overflow-hidden rounded-xs outline-2 -outline-offset-2 outline-transparent transition-[outline-color] hover:outline-bone focus-visible:outline-bone"
-                  >
-                    <Photo
-                      placeholder={p.placeholder}
-                      publicId={p.photoPublicId}
-                      url={p.photoUrl}
-                      cutout={p.photoCutout}
-                      alt=""
-                      className="h-full w-full"
-                      imgClassName={cx(
-                        "transition-transform duration-500 group-hover:scale-105",
-                        p.photoCutout && "p-[12%]! pt-[16%]! pb-[34%]!",
-                      )}
-                      sizes="280px"
-                      ratio={[4, 5]}
-                    />
-                    <span aria-hidden className="absolute inset-x-0 bottom-0 h-[45%] bg-linear-to-t from-black/85 via-black/40 to-transparent" />
-                    <span className="absolute inset-x-5 bottom-5 flex items-center gap-2.5 font-display text-[clamp(26px,2.4vw,32px)] leading-none font-semibold text-bone uppercase">
-                      <RedX size={14} stroke={4} />
-                      {c.name}
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
+          </FeaturedReveal>
         </section>
       )}
 
