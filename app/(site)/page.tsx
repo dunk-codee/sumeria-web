@@ -3,12 +3,12 @@ import { FeaturedReveal } from "@/components/home/FeaturedReveal";
 import { Hero } from "@/components/home/Hero";
 import { Photo } from "@/components/Photo";
 import { button, ButtonLink, Eyebrow, ExternalButton, SectionTitle, typeTag, TYPE_LABELS } from "@/components/ui";
-import { RedX } from "@/components/XMark";
 import { getEvents, getMenu, getSettings } from "@/lib/data";
 import { ctaHref, eventDateParts, featuredEvent } from "@/lib/events";
 import { cx } from "@/lib/format";
 import { hoursOf } from "@/lib/hours";
 import { placeholderBg } from "@/lib/placeholders";
+import { SLATE_CARD } from "@/components/site/slate";
 
 /** Estado inicial de lo que aparece al scrollear (lo anima `FeaturedReveal`). */
 const HIDDEN = "opacity-0 motion-reduce:opacity-100!";
@@ -99,7 +99,7 @@ export default async function HomePage() {
               {/* Mobile: las tarjetas encajan al deslizar y el borde derecho se desvanece hasta llegar al final (data-end). */}
               <div
                 data-rail
-                className="no-scrollbar grid snap-x snap-mandatory scroll-px-[clamp(20px,5vw,72px)] auto-cols-[72%] grid-flow-col gap-3 overflow-x-auto px-gutter py-2 [mask-image:linear-gradient(to_right,#000_82%,transparent)] data-[end=true]:[mask-image:none] sm:auto-cols-[minmax(220px,1fr)] d:snap-none d:[mask-image:none]"
+                className="no-scrollbar grid snap-x snap-mandatory auto-cols-[72%] grid-flow-col justify-start gap-3 overflow-x-auto px-[14%] py-2 [mask-image:linear-gradient(to_right,#000_82%,transparent)] data-[end=true]:[mask-image:none] sm:auto-cols-[minmax(200px,1fr)] sm:justify-stretch sm:px-gutter d:snap-none d:[mask-image:none]"
               >
                 {stars.map((c) => {
                   const p = c.products.find((x) => x.photoUrl || x.photoPublicId) ?? c.products[0];
@@ -108,7 +108,10 @@ export default async function HomePage() {
                       key={c.id}
                       data-rail-item
                       href={`/carta#cat-${c.slug}`}
-                      className="group relative block snap-start opacity-0 motion-reduce:opacity-100! aspect-[4/5] overflow-hidden rounded-xs outline-2 -outline-offset-2 outline-transparent transition-[outline-color] hover:outline-bone focus-visible:outline-bone"
+                      className={cx(
+                        "group relative block aspect-[4/5] snap-center opacity-0 motion-reduce:opacity-100! outline-2 -outline-offset-2 outline-transparent transition-[outline-color] hover:outline-bone focus-visible:outline-bone",
+                        SLATE_CARD,
+                      )}
                     >
                       <Photo
                         placeholder={p.placeholder}
@@ -116,6 +119,7 @@ export default async function HomePage() {
                         url={p.photoUrl}
                         cutout={p.photoCutout}
                         alt=""
+                        bare
                         className="h-full w-full"
                         imgClassName={cx(
                           "transition-transform duration-500 group-hover:scale-105",
@@ -125,8 +129,7 @@ export default async function HomePage() {
                         ratio={[4, 5]}
                       />
                       <span aria-hidden className="absolute inset-x-0 bottom-0 h-[45%] bg-linear-to-t from-black/85 via-black/40 to-transparent" />
-                      <span className="absolute inset-x-5 bottom-5 flex items-center gap-2.5 font-display text-[clamp(26px,2.4vw,32px)] leading-none font-semibold text-bone uppercase">
-                        <RedX size={14} stroke={4} />
+                      <span className="absolute inset-x-3 bottom-5 flex flex-col items-center justify-center gap-2.5 text-center font-display text-[clamp(22px,2vw,28px)] leading-none font-semibold text-balance text-bone uppercase">
                         {c.name}
                       </span>
                     </Link>
