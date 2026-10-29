@@ -29,26 +29,28 @@ export type OrderLine = { name: string; pieces: string | null; price: number; qt
 export function orderMessage(o: {
   lines: OrderLine[];
   mode: "delivery" | "take";
-  zone?: { name: string; price: number };
   name: string;
   address: string;
+  addressNote?: string;
+  payment?: "cash" | "transfer";
   note: string;
   pickupAddress: string;
 }): string {
   const subtotal = o.lines.reduce((a, l) => a + l.qty * l.price, 0);
-  const envio = o.mode === "delivery" && o.zone ? o.zone.price : 0;
   const out = ["¡Hola Sumeria! Quiero hacer este pedido:", ""];
   for (const l of o.lines) {
     const pcs = piecesLabel(l.pieces);
     out.push(`• ${l.qty} × ${l.name}${pcs ? ` (${pcs})` : ""} — ${money(l.qty * l.price)}`);
     if (l.note.trim()) out.push(`   Nota: ${l.note.trim()}`);
   }
-  out.push("", `Subtotal: ${money(subtotal)}`);
-  if (o.mode === "delivery" && o.zone) out.push(`Envío (${o.zone.name}): ${money(envio)}`);
-  out.push(`Total: ${money(subtotal + envio)}`, "");
+  out.push("", `Total: ${money(subtotal)}`, "");
   out.push(`Entrega: ${o.mode === "delivery" ? "Delivery" : `Take away (retiro en ${o.pickupAddress})`}`);
   out.push(`Nombre: ${o.name.trim() || "—"}`);
-  if (o.mode === "delivery") out.push(`Dirección: ${o.address.trim() || "—"}`);
+  if (o.mode === "delivery") {
+    out.push(`Dirección: ${o.address.trim() || "—"}`);
+    if (o.addressNote?.trim()) out.push(`Aclaraciones: ${o.addressNote.trim()}`);
+  }
+  if (o.payment) out.push(`Pago: ${o.payment === "cash" ? "Efectivo" : "Transferencia"}`);
   if (o.note.trim()) out.push(`Nota: ${o.note.trim()}`);
   return out.join("\n");
 }

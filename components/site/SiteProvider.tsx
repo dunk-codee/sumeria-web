@@ -4,8 +4,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { orderMessage, waLink, type OrderLine } from "@/lib/whatsapp";
 
 export type CartProduct = { id: number; name: string; pieces: string | null; price: number; available: boolean };
-export type Zone = { id: number; name: string; description: string; price: number };
 type CartEntry = { qty: number; note: string };
+export type Payment = "cash" | "transfer";
 
 type Persisted = {
   cart: Record<string, CartEntry>;
@@ -13,7 +13,9 @@ type Persisted = {
   mode: "delivery" | "take";
   name: string;
   address: string;
-  zone: number | null;
+  /** Aclaraciones para encontrar la dirección (solo delivery). */
+  addressNote: string;
+  payment: Payment;
 };
 
 const STORAGE_KEY = "sumeria:pedido";
@@ -21,15 +23,11 @@ const STORAGE_KEY = "sumeria:pedido";
 type Ctx = Persisted & {
   ready: boolean;
   products: Record<number, CartProduct>;
-  zones: Zone[];
   whatsapp: string;
   pickupAddress: string;
   lines: (OrderLine & { id: number })[];
   count: number;
   subtotal: number;
-  envio: number;
-  total: number;
-  zoneObj: Zone | undefined;
   message: string;
   qtyOf: (id: number) => number;
   setQty: (id: number, qty: number) => void;
@@ -53,19 +51,17 @@ export function useSite() {
 
 export function SiteProvider({
   products,
-  zones,
   whatsapp,
   pickupAddress,
   children,
 }: {
   products: CartProduct[];
-  zones: Zone[];
   whatsapp: string;
   pickupAddress: string;
   children: ReactNode;
 }) {
   const byId = useMemo(() => Object.fromEntries(products.map((p) => [p.id, p])) as Record<number, CartProduct>, [products]);
-  const [state, setState] = useState<Persisted>({ cart: {}, generalNote: "", mode: "delivery", name: "", address: "", zone: null });
+  const [state, setState] = useState<Persisted>({ cart: {}, generalNote: "", mode: "take", name: "", address: "", addressNote: "", payment: "cash" });
   const [ready, setReady] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -81,8 +77,9 @@ export function SiteProvider({
           const p = byId[Number(id)];
           if (p?.available && e && e.qty > 0) cart[id] = { qty: Math.min(99, Math.floor(e.qty)), note: String(e.note ?? "") };
         }
+        const payment = saved.payment === "transfer" ? "transfer" : "cash";
         // eslint-disable-next-line react-hooks/set-state-in-effect -- hidratación desde localStorage
-        setState((s) => ({ ...s, ...saved, cart }));
+        setState((s) => ({ ...s, ...saved, cart, payment }));
       }
     } catch {
       /* localStorage no disponible: el pedido vive solo en memoria */
@@ -119,16 +116,15 @@ export function SiteProvider({
       return p ? { id: p.id, name: p.name, pieces: p.pieces, price: p.price, qty: e.qty, note: e.note } : null;
     })
     .filter((l): l is NonNullable<typeof l> => l !== null);
-  const zoneObj = zones.find((z) => z.id === state.zone) ?? zones[0];
   const count = lines.reduce((a, l) => a + l.qty, 0);
   const subtotal = lines.reduce((a, l) => a + l.qty * l.price, 0);
-  const envio = state.mode === "delivery" && zoneObj ? zoneObj.price : 0;
   const message = orderMessage({
     lines,
     mode: state.mode,
-    zone: zoneObj,
     name: state.name,
     address: state.address,
+    addressNote: state.addressNote,
+    payment: state.payment,
     note: state.generalNote,
     pickupAddress,
   });
@@ -146,15 +142,11 @@ export function SiteProvider({
     ...state,
     ready,
     products: byId,
-    zones,
     whatsapp,
     pickupAddress,
     lines,
     count,
     subtotal,
-    envio,
-    total: subtotal + envio,
-    zoneObj,
     message,
     qtyOf: (id) => state.cart[id]?.qty ?? 0,
     setQty,
