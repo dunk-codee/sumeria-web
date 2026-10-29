@@ -251,6 +251,18 @@ pará `npm run dev` antes de correr `db:seed` o `next build`. Para hacer el buil
   vuelve a estampar; si la cantidad viene del pedido guardado, aparece quieto. El foco pasa a "+" al agregar y vuelve a "Agregar" al llegar a 0.
 - **Carrito**: estado en `SiteProvider`, persistido en `localStorage` (`sumeria:pedido`). Arma el mensaje exacto del handoff
   (`orderMessage` en `lib/whatsapp.ts`) y abre `wa.me/<whatsapp del local>`.
+  En el carrito (`CartDrawer`) cada ítem tiene un botón para **quitarlo** (tacho) y, debajo de la lista, **"Agregar productos"**
+  (sello punteado como el de la carta) lleva a `/carta` y cierra el carrito. En delivery, debajo de la dirección, hay
+  **"Aclaraciones de la dirección"** (`addressNote`: timbre, portón…; va al mensaje como "Aclaraciones"); la
+  **"Nota del pedido"** (los dos modos) va arriba de la sección Entrega.
+  **Pago** (entre la nota y Entrega): Efectivo o Transferencia (`payment`); va al mensaje como "Pago: …".
+  **De entrada: Efectivo y Take away** (Take away a la izquierda), pedido del cliente.
+  Obligatorios: nombre y, en delivery, dirección (sin contar espacios). Aclaraciones y nota dicen "(opcional)". Al tocar
+  "Enviar" con un obligatorio vacío, la vista va al primer campo vacío (foco + mensaje debajo del campo, `aria-describedby`)
+  y abajo aparece "Faltan datos". **Teclado en mobile** (`useKeyboard`, con `visualViewport`): en iOS el panel sube su borde
+  de abajo lo que tapa el teclado; con el teclado abierto se oculta el bloque del total para que no tape el campo, y el campo
+  con foco se centra. **Sin zonas de delivery** (pedido del cliente): no hay selector ni costo de envío;
+  el mensaje lleva solo el total de los productos. Las zonas siguen en la base, en el panel y en *Nosotros*.
 - **Fotos**: `Photo.tsx` pinta siempre el fondo placeholder cálido y encima la foto (`CldImage` si hay `public_id`, si no `next/image`).
   `photo_cutout = true` → la foto (PNG/WebP sin fondo) se muestra entera, sin recortar.
 - **Modo sin base** (producción sin `DATABASE_URL`, que es como está hoy en Vercel): `dbConfigured()` en `lib/db.ts` da `false` y

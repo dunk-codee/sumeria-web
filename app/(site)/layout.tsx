@@ -13,7 +13,7 @@ export default async function SiteLayout({ children }: LayoutProps<"/">) {
   const salon = hoursOf(settings, "salon");
 
   return (
-    <SiteProvider products={products} zones={settings.zones} whatsapp={settings.whatsapp} pickupAddress={settings.address}>
+    <SiteProvider products={products} whatsapp={settings.whatsapp} pickupAddress={settings.address}>
       <SiteHeader />
       <main>{children}</main>
       <footer className="border-t border-bone/12 px-gutter pt-10 pb-[100px]">

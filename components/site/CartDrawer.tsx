@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { cx, money, piecesLabel } from "@/lib/format";
 import { button } from "../ui";
 import { XMark } from "../XMark";
@@ -30,12 +30,95 @@ const useIsDesktop = () =>
     () => false,
   );
 
+/**
+ * Teclado en pantalla (solo mobile). iOS no achica la página al abrirlo: `inset` es cuánto tapa, para subir el borde de
+ * abajo del carrito. `open`: hay un campo con foco y el área visible se achicó (también en Android, que sí achica la página).
+ */
+function useKeyboard(enabled: boolean) {
+  const [kb, setKb] = useState({ inset: 0, open: false });
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!enabled || !vv) return;
+    let maxH = vv.height;
+    let wasOpen = false;
+    const update = () => {
+      maxH = Math.max(maxH, vv.height);
+      const el = document.activeElement;
+      const typing = el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement;
+      const inset = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+      const open = typing && vv.height < maxH - 120;
+      setKb((k) => (k.inset === inset && k.open === open ? k : { inset, open }));
+      // Al abrirse el teclado, el campo con foco queda a la vista.
+      if (open && !wasOpen) el.scrollIntoView({ block: "center" });
+      wasOpen = open;
+    };
+    update();
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    document.addEventListener("focusin", update);
+    document.addEventListener("focusout", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+      document.removeEventListener("focusin", update);
+      document.removeEventListener("focusout", update);
+    };
+  }, [enabled]);
+  return enabled ? kb : { inset: 0, open: false };
+}
+
+/** Opciones excluyentes en dos mitades (entrega, pago). */
+function Segmented<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: readonly (readonly [T, string])[];
+  value: T;
+  onChange: (v: T) => void;
+}) {
+  return (
+    <div role="radiogroup" aria-label={label} className="grid grid-cols-2 overflow-hidden rounded-xs border border-bone/30">
+      {options.map(([v, text]) => (
+        <button
+          key={v}
+          type="button"
+          role="radio"
+          aria-checked={value === v}
+          onClick={() => onChange(v)}
+          className={cx(
+            "flex h-[46px] items-center justify-center font-display text-[15px] font-semibold tracking-[.1em] uppercase",
+            value === v ? "bg-bone text-ink" : "text-stone-2",
+          )}
+        >
+          {text}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Rótulo de campo; los opcionales lo dicen. */
+function FieldLabel({ children, optional }: { children: ReactNode; optional?: boolean }) {
+  return (
+    <span className="text-[13px] font-semibold text-sand">
+      {children}
+      {optional && <span className="font-normal text-stone-3"> (opcional)</span>}
+    </span>
+  );
+}
+
 export function CartDrawer() {
   const s = useSite();
   const [tried, setTried] = useState(false);
   const [notesOpen, setNotesOpen] = useState<Record<number, boolean>>({});
   const closeRef = useRef<HTMLButtonElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const addrRef = useRef<HTMLInputElement>(null);
   const desktop = useIsDesktop();
+  const kb = useKeyboard(s.cartOpen && !desktop);
   const hidden = desktop ? { x: "100%" } : { y: "100%" };
 
   useEffect(() => {
@@ -52,12 +135,14 @@ export function CartDrawer() {
   const missName = !s.name.trim();
   const missAddr = s.mode === "delivery" && !s.address.trim();
   const sendErr = tried && (missName || missAddr);
-  const errText =
-    missName && missAddr ? "Completá tu nombre y la dirección de entrega." : missName ? "Completá tu nombre." : "Completá la dirección de entrega.";
 
   const send = () => {
-    if (missName || missAddr) {
+    // Falta un dato obligatorio: se lleva la vista al primer campo vacío (con su mensaje) y se le da foco.
+    const first = missName ? nameRef.current : missAddr ? addrRef.current : null;
+    if (first) {
       setTried(true);
+      first.focus({ preventScroll: true });
+      first.scrollIntoView({ block: "center", behavior: "smooth" });
       return;
     }
     window.open(s.orderUrl, "_blank", "noopener");
@@ -84,6 +169,7 @@ export function CartDrawer() {
         role="dialog"
         aria-modal="true"
         aria-labelledby="cart-title"
+        style={kb.inset ? { bottom: kb.inset } : undefined}
         className="fixed top-12 right-0 bottom-0 z-[51] flex w-full flex-col overflow-hidden rounded-t-2xl border-l border-bone/12 bg-[#12100E] d:top-0 d:w-[460px] d:rounded-none"
         initial={hidden}
         animate={{ x: 0, y: 0 }}
@@ -139,13 +225,26 @@ export function CartDrawer() {
                           className="border-bone/30"
                           btn="h-10 w-11 text-[19px]"
                         />
-                        <button
-                          type="button"
-                          onClick={() => setNotesOpen((n) => ({ ...n, [it.id]: !n[it.id] }))}
-                          className="py-2.5 text-[13px] text-stone-2 underline"
-                        >
-                          {noteOpen ? "Nota" : "+ Agregar nota"}
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setNotesOpen((n) => ({ ...n, [it.id]: !n[it.id] }))}
+                            className="py-2.5 text-[13px] text-stone-2 underline"
+                          >
+                            {noteOpen ? "Nota" : "+ Agregar nota"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => s.setQty(it.id, 0)}
+                            aria-label={`Quitar ${it.name} del pedido`}
+                            title="Quitar"
+                            className="-mr-2.5 flex h-11 w-11 items-center justify-center text-stone-3 transition-colors hover:text-sumeria-light"
+                          >
+                            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                              <path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-12M9 7V4h6v3" />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                       {noteOpen && (
                         <input
@@ -161,95 +260,90 @@ export function CartDrawer() {
                 })}
               </div>
 
+              <AddMore />
+
               <label className="flex flex-col gap-1.5">
-                <span className="text-[13px] font-semibold text-sand">Nota para el pedido</span>
+                <FieldLabel optional>Nota del pedido</FieldLabel>
                 <textarea
                   value={s.generalNote}
                   onChange={(e) => s.set({ generalNote: e.target.value })}
                   rows={2}
-                  placeholder="Ej.: tocar timbre 2B, palitos para 3"
+                  placeholder="Ej.: palitos para 3, salsa de soja extra"
                   className={cx(field, "resize-y border-bone/20 py-2.5")}
                 />
               </label>
 
               <div className="flex flex-col gap-3">
+                <span className="font-display text-sm tracking-[.2em] text-stone-3 uppercase">Pago</span>
+                <Segmented
+                  label="Método de pago"
+                  options={[
+                    ["cash", "Efectivo"],
+                    ["transfer", "Transferencia"],
+                  ]}
+                  value={s.payment}
+                  onChange={(payment) => s.set({ payment })}
+                />
+              </div>
+
+              <div className="flex flex-col gap-3">
                 <span className="font-display text-sm tracking-[.2em] text-stone-3 uppercase">Entrega</span>
-                <div className="grid grid-cols-2 overflow-hidden rounded-xs border border-bone/30" role="radiogroup" aria-label="Entrega">
-                  {(
-                    [
-                      ["delivery", "Delivery"],
-                      ["take", "Take away"],
-                    ] as const
-                  ).map(([m, label]) => (
-                    <button
-                      key={m}
-                      type="button"
-                      role="radio"
-                      aria-checked={s.mode === m}
-                      onClick={() => s.set({ mode: m })}
-                      className={cx(
-                        "flex h-[46px] items-center justify-center font-display text-[15px] font-semibold tracking-[.1em] uppercase",
-                        s.mode === m ? "bg-bone text-ink" : "text-stone-2",
-                      )}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
+                <Segmented
+                  label="Entrega"
+                  options={[
+                    ["take", "Take away"],
+                    ["delivery", "Delivery"],
+                  ]}
+                  value={s.mode}
+                  onChange={(mode) => s.set({ mode })}
+                />
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-[13px] font-semibold text-sand">Nombre</span>
+                  <FieldLabel>Nombre</FieldLabel>
                   <input
+                    ref={nameRef}
                     value={s.name}
                     onChange={(e) => s.set({ name: e.target.value })}
                     placeholder="A nombre de quién"
                     autoComplete="name"
                     aria-invalid={tried && missName}
-                    className={cx(field, "h-[46px]", tried && missName ? "border-sumeria-light" : "border-bone/20")}
+                    aria-describedby={tried && missName ? "cart-name-err" : undefined}
+                    className={cx(field, "h-[46px] scroll-my-24", tried && missName ? "border-sumeria-light" : "border-bone/20")}
                   />
+                  {tried && missName && (
+                    <span id="cart-name-err" className="text-[13px] text-sumeria-light">
+                      Completá tu nombre.
+                    </span>
+                  )}
                 </label>
                 {s.mode === "delivery" ? (
                   <>
                     <label className="flex flex-col gap-1.5">
-                      <span className="text-[13px] font-semibold text-sand">Dirección</span>
+                      <FieldLabel>Dirección</FieldLabel>
                       <input
+                        ref={addrRef}
                         value={s.address}
                         onChange={(e) => s.set({ address: e.target.value })}
                         placeholder="Calle, número, piso"
                         autoComplete="street-address"
                         aria-invalid={tried && missAddr}
-                        className={cx(field, "h-[46px]", tried && missAddr ? "border-sumeria-light" : "border-bone/20")}
+                        aria-describedby={tried && missAddr ? "cart-addr-err" : undefined}
+                        className={cx(field, "h-[46px] scroll-my-24", tried && missAddr ? "border-sumeria-light" : "border-bone/20")}
+                      />
+                      {tried && missAddr && (
+                        <span id="cart-addr-err" className="text-[13px] text-sumeria-light">
+                          Completá la dirección de entrega.
+                        </span>
+                      )}
+                    </label>
+                    <label className="flex flex-col gap-1.5">
+                      <FieldLabel optional>Aclaraciones de la dirección</FieldLabel>
+                      <input
+                        value={s.addressNote}
+                        onChange={(e) => s.set({ addressNote: e.target.value })}
+                        placeholder="Ej.: tocar timbre 2B, portón negro"
+                        className={cx(field, "h-[46px] border-bone/20")}
                       />
                     </label>
-                    {s.zones.length > 0 && (
-                      <div className="flex flex-col gap-1.5" role="radiogroup" aria-label="Zona de envío">
-                        <span className="text-[13px] font-semibold text-sand">Zona</span>
-                        {s.zones.map((z) => {
-                          const active = s.zoneObj?.id === z.id;
-                          return (
-                            <button
-                              key={z.id}
-                              type="button"
-                              role="radio"
-                              aria-checked={active}
-                              onClick={() => s.set({ zone: z.id })}
-                              className={cx(
-                                "flex items-center justify-between gap-2.5 rounded-xs border px-3 py-[11px] text-left",
-                                active ? "border-bone" : "border-bone/18",
-                              )}
-                            >
-                              <span className="flex items-center gap-2.5">
-                                <span className="flex w-3.5">{active && <XMark size={11} stroke={4} className="text-sumeria" />}</span>
-                                <span className="flex flex-col">
-                                  <span className="text-sm font-semibold">{z.name}</span>
-                                  <span className="text-xs text-stone-3">{z.description}</span>
-                                </span>
-                              </span>
-                              <span className="font-display text-base">{money(z.price)}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
                   </>
                 ) : (
                   <span className="text-sm leading-normal text-stone-2">
@@ -266,26 +360,15 @@ export function CartDrawer() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-2.5 border-t border-bone/12 bg-[#12100E] px-5 pt-3.5 pb-[18px]">
-              <div className="flex flex-col gap-[3px] text-sm text-stone-2">
-                <div className="flex justify-between">
-                  <span>Subtotal</span>
-                  <span>{money(s.subtotal)}</span>
-                </div>
-                {s.mode === "delivery" && (
-                  <div className="flex justify-between">
-                    <span>Envío</span>
-                    <span>{money(s.envio)}</span>
-                  </div>
-                )}
-              </div>
+            {/* Con el teclado abierto (mobile) el total se oculta, así no tapa el campo que se está completando. */}
+            <div className={cx("flex flex-col gap-2.5 border-t border-bone/12 bg-[#12100E] px-5 pt-3.5 pb-[18px]", kb.open && "hidden")}>
               <div className="flex items-baseline justify-between">
                 <span className="font-display text-lg tracking-[.1em] uppercase">Total</span>
-                <span className="font-display text-[28px] font-semibold text-sumeria">{money(s.total)}</span>
+                <span className="font-display text-[28px] font-semibold text-sumeria">{money(s.subtotal)}</span>
               </div>
               {sendErr && (
                 <span className="text-[13px] text-sumeria-light" role="alert">
-                  {errText}
+                  Faltan datos: revisá los campos marcados.
                 </span>
               )}
               <button type="button" onClick={send} className={cx(button({ variant: "primary", size: "lg" }), "py-[17px]")}>
@@ -298,6 +381,23 @@ export function CartDrawer() {
       </motion.aside>
       )}
     </AnimatePresence>
+  );
+}
+
+/** Vuelve a la carta para sumar productos (cierra el carrito). Mismo sello punteado que el "Agregar" de la carta. */
+function AddMore() {
+  const { closeCart } = useSite();
+  return (
+    <Link
+      href="/carta"
+      onClick={closeCart}
+      className="group flex h-[60px] flex-none items-center justify-center gap-3 rounded-xs border border-dashed border-bone/25 font-display text-sm font-medium tracking-[.14em] text-bone uppercase transition-colors hover:border-bone/50"
+    >
+      <span className="flex h-7 min-w-7 -rotate-6 items-center justify-center rounded-xs border-[1.5px] border-dashed border-sumeria font-display text-base leading-none font-semibold text-sumeria transition-[rotate,background-color,color,border-color] duration-200 group-hover:rotate-0 group-hover:border-solid group-hover:border-sumeria-dark group-hover:bg-sumeria-dark group-hover:text-white">
+        +
+      </span>
+      Agregar productos
+    </Link>
   );
 }
 
@@ -364,7 +464,7 @@ export function CartFab() {
         </span>
         Ver pedido
       </span>
-      <span className="font-display text-[19px] font-semibold">{money(s.total)}</span>
+      <span className="font-display text-[19px] font-semibold">{money(s.subtotal)}</span>
     </button>
   );
 }
