@@ -275,8 +275,8 @@ pará `npm run dev` antes de correr `db:seed` o `next build`. Para hacer el buil
 - **"¿Qué pedimos hoy?"** (inicio, `FeaturedReveal` en `components/home/FeaturedReveal.tsx`): al entrar en pantalla sube el
   encabezado (`data-reveal`) y después las tarjetas (`data-rail-item`), escalonadas; arrancan con `opacity-0` en el HTML
   (`motion-reduce:opacity-100!`). En **mobile** se nota que la tira scrollea: tarjetas al 72 % (asoma la siguiente), encastre
-  (`snap-x`), borde derecho desvanecido hasta llegar al final (`data-end`) y, una sola vez, un amague de las tarjetas hacia la
-  izquierda (no corre si la persona ya está deslizando).
+  (`snap-x`) y borde derecho desvanecido hasta llegar al final (`data-end`). (Se probó un amague de las tarjetas hacia la
+  izquierda y se sacó.)
 - **Header** (`components/site/SiteHeader.tsx`, cliente, vive en el layout así que no se remonta al navegar):
   - Botón del pedido (`CartButton`): **sello hanko**. "Pedido" en texto limpio (sin caja) + la cantidad dentro de un cuadradito
     `sumeria-dark`, inclinado −6°, con filete interior blanco (`ring-inset`) como los sellos japoneses; al pasar el mouse se endereza.
