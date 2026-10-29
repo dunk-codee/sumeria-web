@@ -260,6 +260,18 @@ pará `npm run dev` antes de correr `db:seed` o `next build`. Para hacer el buil
   - `/admin/login` y el panel muestran "Falta conectar la base de datos".
   En desarrollo nunca entra en este modo (usa PGlite). **Para activar todo**: crear Neon, `db:migrate` + `db:seed` contra Neon,
   cargar `DATABASE_URL`, `ADMIN_*` y `AUTH_SECRET` en Vercel y redeployar (en ese orden: el build prerenderiza leyendo la base).
+- **Hero del inicio** (`components/home/Hero.tsx`): de fondo un video (`HeroVideo`; 1080p en desktop, 720p en mobile): se reproduce
+  una vez al entrar (mudo, `playsInline`, sin loop) y queda pausado en el último cuadro. Va a 1,25× (`RATE`) y en el
+  último tramo frena (`TAIL`, hasta 0,5×; más lento se ve trabado) para asentarse en la imagen final en vez de cortar.
+  Al empezar a frenar, la imagen sigue con un acercamiento lento (`scale-103`, 2 s) y se oscurece (capa negra al 35 %, 2,5 s):
+  el movimiento no se corta y el texto gana contraste. (Se descartó un "rebote": Chrome no reproduce video en reversa y
+  un rebote de escala se sentía como golpe de cámara.) Igual que la intro del texto, corre una vez
+  por carga: al volver al inicio navegando, o con `prefers-reduced-motion`, se muestra directo el último cuadro, ya acercado y oscurecido.
+  Texto: "Sushi · Rolls · Salads · Bagels" cae palabra por palabra con rebote (spring, `WORDS_AT` + `WORDS_STAGGER`); recién
+  después (`AFTER_WORDS`) entran los CTAs y la línea de datos. CTAs (`HeroCta`): **sello hanko** como el pedido y el "Agregar":
+  texto en mayúsculas + sello con flecha (rojo relleno en "Ver la carta", punteado en "Reservar mesa"); al pasar el mouse el
+  sello se endereza, la flecha avanza y se dibuja un subrayado rojo. (Historial: antes eran píldoras con `button()`; el cliente
+  las encontró genéricas.)
 - **Header** (`components/site/SiteHeader.tsx`, cliente, vive en el layout así que no se remonta al navegar):
   - Botón del pedido (`CartButton`): **sello hanko**. "Pedido" en texto limpio (sin caja) + la cantidad dentro de un cuadradito
     `sumeria-dark`, inclinado −6°, con filete interior blanco (`ring-inset`) como los sellos japoneses; al pasar el mouse se endereza.
@@ -341,9 +353,12 @@ desde el panel, porque `db:seed` no pisa datos existentes (solo con `-- --force`
 2. **Anti-spam en reservas**: hoy `POST /api/reservations` no tiene límite. Agregar rate limit por IP (p. ej. Upstash/Vercel KV) y/o honeypot.
 3. **Protección del login**: limitar intentos (hoy solo hay un retardo de 400 ms).
 4. **Aviso al local de reservas nuevas** (hoy solo se ven en el panel): notificación por WhatsApp/email o badge en tiempo real.
-5. **Contenido del cliente**: el hero usa `public/fotos/hero-sushi.jpg` (1942×809; original en `info_web/fotos/`).
-   Lo ideal sería ~3840×1600 para pantallas retina; si llega una versión más grande, guardarla con **otro nombre**
-   (las imágenes optimizadas se cachean por URL) y actualizar el `src` en `app/(site)/page.tsx`.
+5. **Contenido del cliente**: el hero usa video (`HeroVideo` en `components/home/Hero.tsx`, 5,8 s, 25 fps, sin audio):
+   `public/fotos/hero-1080.mp4` (2,6 MB) en desktop y `hero-720.mp4` (0,9 MB) en mobile, con `<source media>`. Salen del
+   original 1920×1080 (en `info_web/fotos/`, 7 MB) con
+   `ffmpeg -i original.mp4 -an -c:v libx264 -preset veryslow -crf 23 -pix_fmt yuv420p -movflags +faststart hero-1080.mp4`
+   (el de 720: `-vf scale=1280:720:flags=lanczos -crf 24`). `+faststart` hace que arranque antes de bajarse entero.
+   Si se reemplaza, guardarlo con **otro nombre** (cachea por URL). Para recomprimir hace falta ffmpeg (`winget install Gyan.FFmpeg`; se desinstaló después de usarlo).
    Faltan fotos de nosotros, delivery y galería "Así lo disfrutan", logo SVG, archivos de tipografías,
    horarios de cierre, zonas y costos de envío reales (estos últimos se cargan desde *Datos del local*).
 6. **Galería de Instagram** del inicio: hoy son placeholders; definir si se carga desde el panel o desde la API de Instagram.
