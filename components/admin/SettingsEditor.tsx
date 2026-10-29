@@ -34,7 +34,7 @@ export function SettingsEditor({
 
   return (
     <>
-      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-bone/8 px-5 pt-7 pb-[18px] md:px-8">
+      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-bone/8 px-5 pt-7 pb-4.5 md:px-8">
         <div className="flex flex-col gap-1">
           <span className="font-mono text-[11px] tracking-[.08em] text-panel-muted uppercase">Configuración</span>
           <h1 className="m-0 font-display text-[34px] leading-[1.05] font-semibold uppercase">Datos del local</h1>
@@ -43,8 +43,8 @@ export function SettingsEditor({
           {saving ? "Guardando…" : "Guardar"}
         </AButton>
       </div>
-      <div className="grid max-w-[1100px] grid-cols-[repeat(auto-fit,minmax(min(100%,360px),1fr))] items-start gap-4 px-5 pt-5 pb-12 md:px-8">
-        <Card className="flex flex-col gap-3 p-[18px]">
+      <div className="grid max-w-275 grid-cols-[repeat(auto-fit,minmax(min(100%,360px),1fr))] items-start gap-4 px-5 pt-5 pb-12 md:px-8">
+        <Card className="flex flex-col gap-3 p-4.5">
           <h2 className="m-0 text-[15px] font-bold">Contacto y ubicación</h2>
           <Field label="Dirección">
             <input value={s.address} onChange={(e) => setS({ ...s, address: e.target.value })} className={inputCls} />
@@ -59,7 +59,7 @@ export function SettingsEditor({
             <input value={s.instagram} onChange={(e) => setS({ ...s, instagram: e.target.value })} className={inputCls} />
           </Field>
         </Card>
-        <Card className="flex flex-col gap-3 p-[18px]">
+        <Card className="flex flex-col gap-3 p-4.5">
           <h2 className="m-0 text-[15px] font-bold">Horarios</h2>
           <div className="grid grid-cols-[1fr_88px_88px] gap-2 font-mono text-[10.5px] text-panel-muted uppercase">
             <span />
@@ -76,7 +76,7 @@ export function SettingsEditor({
                   aria-label={`${h.label} ${k === "from" ? "desde" : "hasta"}`}
                   onChange={(e) => setHours((hs) => hs.map((x, j) => (j === i ? { ...x, [k]: e.target.value } : x)))}
                   placeholder="HH:MM"
-                  className={cx(inputCls, "h-[38px] text-center")}
+                  className={cx(inputCls, "h-9.5 text-center")}
                 />
               ))}
             </div>
@@ -85,7 +85,7 @@ export function SettingsEditor({
             Abierto todos los días. El sitio muestra estos horarios; el turno de reservas es único y los días reservables se definen en Calendario de reservas.
           </span>
         </Card>
-        <Card className="col-span-full flex flex-col gap-3 p-[18px]">
+        <Card className="col-span-full flex flex-col gap-3 p-4.5">
           <div className="flex items-center justify-between">
             <h2 className="m-0 text-[15px] font-bold">Zonas de delivery</h2>
             <AButton variant="link" className="text-[13px]" onClick={() => setZones((zs) => [...zs, { name: `Zona ${zs.length + 1}`, description: "", price: "" }])}>
@@ -100,15 +100,15 @@ export function SettingsEditor({
           </div>
           {zones.map((z, i) => (
             <div key={i} className="grid grid-cols-1 items-center gap-2 border-b border-bone/6 pb-3 sm:grid-cols-[1fr_1.4fr_120px_60px] sm:border-0 sm:pb-0">
-              <input value={z.name} onChange={(e) => updZone(i, { name: e.target.value })} aria-label="Nombre de la zona" className={cx(inputCls, "h-[38px]")} />
-              <input value={z.description} onChange={(e) => updZone(i, { description: e.target.value })} aria-label="Alcance" className={cx(inputCls, "h-[38px]")} />
+              <input value={z.name} onChange={(e) => updZone(i, { name: e.target.value })} aria-label="Nombre de la zona" className={cx(inputCls, "h-9.5")} />
+              <input value={z.description} onChange={(e) => updZone(i, { description: e.target.value })} aria-label="Alcance" className={cx(inputCls, "h-9.5")} />
               <input
                 value={z.price}
                 onChange={(e) => updZone(i, { price: e.target.value.replace(/\D/g, "") })}
                 inputMode="numeric"
                 aria-label="Precio de envío"
                 placeholder="$"
-                className={cx(inputCls, "h-[38px]")}
+                className={cx(inputCls, "h-9.5")}
               />
               <AButton variant="link" className="justify-self-start text-[13px]" onClick={() => setZones((zs) => zs.filter((_, j) => j !== i))}>
                 Quitar

@@ -101,7 +101,7 @@ export function BookingCalendar({ initial, today }: { initial: BookingConfig; to
                 aria-pressed={mode === "block" ? isBlocked : inRange}
                 onClick={() => click(d)}
                 className={cx(
-                  "flex min-h-[46px] flex-col items-center justify-center gap-px rounded border text-sm",
+                  "flex min-h-11.5 flex-col items-center justify-center gap-px rounded border text-sm",
                   past && "cursor-default border-transparent text-panel-muted/50",
                   !past && !inRange && "border-bone/10 text-panel-soft hover:border-bone/30",
                   inRange && !isBlocked && "border-panel-text/40 bg-panel-hover text-panel-text",
@@ -127,9 +127,9 @@ export function BookingCalendar({ initial, today }: { initial: BookingConfig; to
           {saving ? "Guardando…" : "Guardar"}
         </AButton>
       </PageHead>
-      <div className="flex max-w-[1000px] flex-col gap-4 px-5 pt-5 pb-12 md:px-8">
-        <Card className="flex flex-col gap-3 p-[18px]">
-          <span className="font-mono text-[10.5px] tracking-[.05em] text-panel-muted uppercase">Hoy se puede reservar</span>
+      <div className="flex max-w-250 flex-col gap-4 px-5 pt-5 pb-12 md:px-8">
+        <Card className="flex flex-col gap-3 p-4.5">
+          <span className="font-mono text-[10.5px] tracking-wider text-panel-muted uppercase">Hoy se puede reservar</span>
           <p className="m-0 text-[15px] leading-normal">
             Desde el <strong>{longDate(effective.from)}</strong> hasta el <strong>{longDate(effective.to)}</strong>
             {blocked.filter((d) => d >= effective.from && d <= effective.to).length > 0 &&
@@ -153,7 +153,7 @@ export function BookingCalendar({ initial, today }: { initial: BookingConfig; to
                 ["range", "Elegir el rango"],
                 ["block", "Cerrar días puntuales"],
               ]}
-              className="w-full max-w-[360px]"
+              className="w-full max-w-90"
             />
             {!usingDefault && (
               <AButton
@@ -181,7 +181,7 @@ export function BookingCalendar({ initial, today }: { initial: BookingConfig; to
           </span>
         </Card>
 
-        <Card className="flex flex-col gap-4 p-[18px]">
+        <Card className="flex flex-col gap-4 p-4.5">
           <div className="flex items-center justify-between">
             <AButton size="sm" onClick={() => move(-1)} disabled={cursor.y * 12 + cursor.m <= t.year * 12 + t.month} aria-label="Mes anterior">
               ← Anterior

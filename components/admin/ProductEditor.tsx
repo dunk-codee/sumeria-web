@@ -49,7 +49,7 @@ export function ProductEditor({ product, cats, defaultCat }: { product: Product 
 
   return (
     <>
-      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-bone/8 px-5 pt-7 pb-[18px] md:px-8">
+      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-bone/8 px-5 pt-7 pb-4.5 md:px-8">
         <div className="flex flex-col gap-1">
           <Link href="/admin/productos" className="font-mono text-[11px] tracking-[.08em] text-panel-muted uppercase">
             ← Productos
@@ -77,7 +77,7 @@ export function ProductEditor({ product, cats, defaultCat }: { product: Product 
             />
           </Card>
           <Field label="Nombre">
-            <input value={ed.name} onChange={(e) => set({ name: e.target.value })} className={cx(inputCls, "h-[42px] text-[15px]")} />
+            <input value={ed.name} onChange={(e) => set({ name: e.target.value })} className={cx(inputCls, "h-10.5 text-[15px]")} />
           </Field>
           <Field
             label="Descripción corta"
@@ -96,7 +96,7 @@ export function ProductEditor({ product, cats, defaultCat }: { product: Product 
           </Field>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Field label="Precio">
-              <input value={ed.price} onChange={(e) => set({ price: e.target.value.replace(/\D/g, "") })} inputMode="numeric" className={cx(inputCls, "h-[42px] text-[15px]")} />
+              <input value={ed.price} onChange={(e) => set({ price: e.target.value.replace(/\D/g, "") })} inputMode="numeric" className={cx(inputCls, "h-10.5 text-[15px]")} />
             </Field>
             <Field
               label={
@@ -105,10 +105,10 @@ export function ProductEditor({ product, cats, defaultCat }: { product: Product 
                 </>
               }
             >
-              <input value={ed.pieces} onChange={(e) => set({ pieces: e.target.value })} placeholder="Ej.: 10 o 4 unidades" className={cx(inputCls, "h-[42px] text-[15px]")} />
+              <input value={ed.pieces} onChange={(e) => set({ pieces: e.target.value })} placeholder="Ej.: 10 o 4 unidades" className={cx(inputCls, "h-10.5 text-[15px]")} />
             </Field>
             <Field label="Categoría">
-              <select value={ed.categoryId} onChange={(e) => set({ categoryId: Number(e.target.value) })} className={cx(inputCls, "h-[42px] px-2.5")}>
+              <select value={ed.categoryId} onChange={(e) => set({ categoryId: Number(e.target.value) })} className={cx(inputCls, "h-10.5 px-2.5")}>
                 {cats.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
@@ -148,7 +148,7 @@ export function ProductEditor({ product, cats, defaultCat }: { product: Product 
             </AButton>
           )}
         </div>
-        <div className="flex max-w-[360px] flex-[1_1_280px] flex-col gap-2.5 md:sticky md:top-6">
+        <div className="flex max-w-90 flex-[1_1_280px] flex-col gap-2.5 md:sticky md:top-6">
           <span className="font-mono text-[10.5px] text-panel-muted uppercase">Así se ve en la carta</span>
           <ProductCard
             preview

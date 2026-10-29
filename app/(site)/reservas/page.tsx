@@ -14,8 +14,8 @@ export const metadata: Metadata = {
 export default async function ReservasPage() {
   const [plan, settings] = await Promise.all([getPlan(), getSettings()]);
   return (
-    <section className="px-gutter pt-page pb-[120px]">
-      <div className="mx-auto flex max-w-[1280px] flex-col gap-7">
+    <section className="px-gutter pt-page pb-30">
+      <div className="mx-auto flex max-w-7xl flex-col gap-7">
         <div className="flex flex-col gap-3">
           <Eyebrow>Reservas</Eyebrow>
           <PageTitle>Reservá tu mesa</PageTitle>
@@ -24,7 +24,7 @@ export default async function ReservasPage() {
           <Reservation plan={plan} whatsapp={settings.whatsapp} booking={settings.booking} />
         ) : (
           // Modo sin base: las reservas online se activan al conectar la base de datos.
-          <div className="flex max-w-[620px] flex-col gap-4 rounded-xs border border-bone/14 bg-coal p-[clamp(22px,3vw,36px)]">
+          <div className="flex max-w-155 flex-col gap-4 rounded-xs border border-bone/14 bg-coal p-[clamp(22px,3vw,36px)]">
             <XMark size={36} stroke={3.6} className="text-sumeria" />
             <h2 className="m-0 font-display text-[clamp(28px,3vw,40px)] leading-none font-semibold uppercase">Reservá por WhatsApp</h2>
             <p className="m-0 text-base leading-[1.55] text-stone-2">

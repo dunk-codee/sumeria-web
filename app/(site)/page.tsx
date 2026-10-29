@@ -27,10 +27,10 @@ export default async function HomePage() {
       {/* Lo que se viene */}
       {feat && (
         <section className="px-gutter pt-section">
-          <div className="mx-auto flex max-w-[1280px] flex-col gap-[clamp(24px,3vw,36px)]">
+          <div className="mx-auto flex max-w-7xl flex-col gap-[clamp(24px,3vw,36px)]">
             <Eyebrow>Lo que se viene</Eyebrow>
             <article className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,380px),1fr))] border border-bone/10 bg-coal">
-              <Photo placeholder={feat.placeholder} publicId={feat.photoPublicId} url={feat.photoUrl} alt={feat.title} className="min-h-[300px]" sizes="(max-width: 900px) 100vw, 640px" ratio={[16, 10]}>
+              <Photo placeholder={feat.placeholder} publicId={feat.photoPublicId} url={feat.photoUrl} alt={feat.title} className="min-h-75" sizes="(max-width: 900px) 100vw, 640px" ratio={[16, 10]}>
                 {feat.type === "sorteo" && (
                   <span className="absolute bottom-1 left-6 font-script text-[clamp(80px,9vw,120px)] leading-none text-bone">Sorteo</span>
                 )}
@@ -86,7 +86,7 @@ export default async function HomePage() {
       {stars.length > 0 && (
         <section className="pt-section">
           <FeaturedReveal>
-            <div className="mx-auto flex max-w-[1280px] flex-col gap-[clamp(24px,3vw,36px)]">
+            <div className="mx-auto flex max-w-7xl flex-col gap-[clamp(24px,3vw,36px)]">
               <div className="flex flex-wrap items-end justify-between gap-4 px-gutter">
                 <div data-reveal className={cx("flex flex-col gap-2.5", HIDDEN)}>
                   <Eyebrow>Carta</Eyebrow>
@@ -99,7 +99,7 @@ export default async function HomePage() {
               {/* Mobile: las tarjetas encajan al deslizar y el borde derecho se desvanece hasta llegar al final (data-end). */}
               <div
                 data-rail
-                className="no-scrollbar grid snap-x snap-mandatory auto-cols-[72%] grid-flow-col justify-start gap-3 overflow-x-auto px-[14%] py-2 [mask-image:linear-gradient(to_right,#000_82%,transparent)] data-[end=true]:[mask-image:none] sm:auto-cols-[minmax(200px,1fr)] sm:justify-stretch sm:px-gutter d:snap-none d:[mask-image:none]"
+                className="no-scrollbar grid snap-x snap-mandatory auto-cols-[72%] grid-flow-col justify-start gap-3 overflow-x-auto px-[14%] py-2 mask-[linear-gradient(to_right,#000_82%,transparent)] data-[end=true]:[mask-image:none] sm:auto-cols-[minmax(200px,1fr)] sm:justify-stretch sm:px-gutter d:snap-none d:mask-none"
               >
                 {stars.map((c) => {
                   const p = c.products.find((x) => x.photoUrl || x.photoPublicId) ?? c.products[0];
@@ -109,7 +109,7 @@ export default async function HomePage() {
                       data-rail-item
                       href={`/carta#cat-${c.slug}`}
                       className={cx(
-                        "group relative block aspect-[4/5] snap-center opacity-0 motion-reduce:opacity-100! outline-2 -outline-offset-2 outline-transparent transition-[outline-color] hover:outline-bone focus-visible:outline-bone",
+                        "group relative block aspect-4/5 snap-center opacity-0 motion-reduce:opacity-100! outline-2 -outline-offset-2 outline-transparent transition-[outline-color] hover:outline-bone focus-visible:outline-bone",
                         SLATE_CARD,
                       )}
                     >
@@ -143,7 +143,7 @@ export default async function HomePage() {
 
       {/* Delivery & take away */}
       <section className="mt-[clamp(56px,7vw,112px)] bg-kraft-bag text-kraft-ink">
-        <div className="mx-auto grid max-w-[1280px] grid-cols-[repeat(auto-fit,minmax(min(100%,360px),1fr))] items-center gap-[clamp(24px,4vw,56px)] px-gutter py-[clamp(40px,6vw,88px)]">
+        <div className="mx-auto grid max-w-7xl grid-cols-[repeat(auto-fit,minmax(min(100%,360px),1fr))] items-center gap-[clamp(24px,4vw,56px)] px-gutter py-[clamp(40px,6vw,88px)]">
           <div className="flex flex-col gap-4">
             <Eyebrow tone="kraft">Delivery &amp; take away</Eyebrow>
             <h2 className="m-0 font-display text-[clamp(38px,5vw,72px)] leading-[.95] font-semibold text-balance uppercase">Te lo llevamos o pasás a buscarlo</h2>
@@ -156,14 +156,14 @@ export default async function HomePage() {
           </div>
           <div className="grid grid-cols-2 gap-2.5" aria-hidden>
             <div
-              className="aspect-[3/4] rounded-xs"
+              className="aspect-3/4 rounded-xs"
               style={{
                 background:
                   "repeating-linear-gradient(135deg,rgba(33,23,14,.06) 0 1px,transparent 1px 8px),radial-gradient(90% 80% at 50% 40%,#E3CCA6 0%,#A27A4C 70%,#6E4E2E 100%)",
               }}
             />
             <div
-              className="mt-10 aspect-[3/4] rounded-xs"
+              className="mt-10 aspect-3/4 rounded-xs"
               style={{
                 background:
                   "repeating-linear-gradient(135deg,rgba(255,255,255,.03) 0 1px,transparent 1px 8px),radial-gradient(80% 70% at 50% 45%,rgba(140,84,44,.6) 0%,#1A120C 80%)",
@@ -175,7 +175,7 @@ export default async function HomePage() {
 
       {/* Ustedes */}
       <section className="px-gutter py-section">
-        <div className="mx-auto flex max-w-[1280px] flex-col gap-[clamp(24px,3vw,36px)]">
+        <div className="mx-auto flex max-w-7xl flex-col gap-[clamp(24px,3vw,36px)]">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="flex flex-col gap-2.5">
               <Eyebrow>Ustedes</Eyebrow>
@@ -192,7 +192,7 @@ export default async function HomePage() {
               href={ig}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-xs border border-bone/35 px-[18px] py-3 font-display text-sm tracking-[.1em] uppercase"
+              className="rounded-xs border border-bone/35 px-4.5 py-3 font-display text-sm tracking-widest uppercase"
             >
               Ver el perfil
             </a>

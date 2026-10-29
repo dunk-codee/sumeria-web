@@ -119,8 +119,8 @@ export function NewReservationDrawer({
   return (
     <>
       <div onClick={onClose} className="fixed inset-0 z-60 bg-black/60" aria-hidden />
-      <aside role="dialog" aria-modal="true" aria-labelledby="nr-title" className="fixed top-0 right-0 bottom-0 z-[61] flex w-full max-w-[420px] flex-col border-l border-bone/10 bg-panel-surface">
-        <div className="flex items-center justify-between border-b border-bone/8 px-5 py-[18px]">
+      <aside role="dialog" aria-modal="true" aria-labelledby="nr-title" className="fixed top-0 right-0 bottom-0 z-61 flex w-full max-w-105 flex-col border-l border-bone/10 bg-panel-surface">
+        <div className="flex items-center justify-between border-b border-bone/8 px-5 py-4.5">
           <h2 id="nr-title" className="m-0 font-display text-2xl font-semibold uppercase">
             Cargar reserva
           </h2>
@@ -128,7 +128,7 @@ export function NewReservationDrawer({
             <XMark size={14} stroke={3.2} className="text-panel-text" />
           </button>
         </div>
-        <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-5 py-[18px]">
+        <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-5 py-4.5">
           <div className="flex flex-col gap-1.5">
             <span className="text-[13px] font-semibold text-sand">¿Por dónde llegó?</span>
             <Segmented value={source} onChange={setSource} options={[["tel", "Teléfono"], ["wa", "WhatsApp"]] as const} />

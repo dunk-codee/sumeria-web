@@ -14,8 +14,8 @@ export default async function NovedadesPage() {
   const cards = Object.fromEntries(events.map((e) => [e.id, <EventCard key={e.id} e={e} instagram={settings.instagram} />]));
 
   return (
-    <section className="px-gutter pt-page pb-[120px]">
-      <div className="mx-auto flex max-w-[1280px] flex-col gap-6">
+    <section className="px-gutter pt-page pb-30">
+      <div className="mx-auto flex max-w-7xl flex-col gap-6">
         <div className="flex flex-col gap-3">
           <Eyebrow>Novedades</Eyebrow>
           <PageTitle>Eventos y promos</PageTitle>

@@ -89,7 +89,7 @@ function Segmented<T extends string>({
           aria-checked={value === v}
           onClick={() => onChange(v)}
           className={cx(
-            "flex h-[46px] items-center justify-center font-display text-[15px] font-semibold tracking-[.1em] uppercase",
+            "flex h-11.5 items-center justify-center font-display text-[15px] font-semibold tracking-widest uppercase",
             value === v ? "bg-bone text-ink" : "text-stone-2",
           )}
         >
@@ -170,13 +170,13 @@ export function CartDrawer() {
         aria-modal="true"
         aria-labelledby="cart-title"
         style={kb.inset ? { bottom: kb.inset } : undefined}
-        className="fixed top-12 right-0 bottom-0 z-[51] flex w-full flex-col overflow-hidden rounded-t-2xl border-l border-bone/12 bg-[#12100E] d:top-0 d:w-[460px] d:rounded-none"
+        className="fixed top-12 right-0 bottom-0 z-51 flex w-full flex-col overflow-hidden rounded-t-2xl border-l border-bone/12 bg-[#12100E] d:top-0 d:w-115 d:rounded-none"
         initial={hidden}
         animate={{ x: 0, y: 0 }}
         exit={{ ...hidden, transition: { duration: 0.3, ease: [0.4, 0, 1, 1] } }}
         transition={{ duration: 0.5, ease: EASE_SHEET }}
       >
-        <div className="flex items-center justify-between gap-3 border-b border-bone/12 px-5 py-[18px]">
+        <div className="flex items-center justify-between gap-3 border-b border-bone/12 px-5 py-4.5">
           <div className="flex items-baseline gap-2.5">
             <h2 id="cart-title" className="m-0 font-display text-[28px] leading-none font-semibold uppercase">
               Tu pedido
@@ -201,7 +201,7 @@ export function CartDrawer() {
           <EmptyCart />
         ) : (
           <>
-            <div className="flex flex-1 flex-col gap-[22px] overflow-y-auto px-5 pt-1 pb-6">
+            <div className="flex flex-1 flex-col gap-5.5 overflow-y-auto px-5 pt-1 pb-6">
               <div className="flex flex-col">
                 {s.lines.map((it) => {
                   const noteOpen = !!notesOpen[it.id] || !!it.note;
@@ -252,7 +252,7 @@ export function CartDrawer() {
                           onChange={(e) => s.setNote(it.id, e.target.value)}
                           placeholder="Ej.: sin sésamo, salsa aparte"
                           aria-label={`Nota para ${it.name}`}
-                          className={cx(field, "h-[42px] border-bone/20")}
+                          className={cx(field, "h-10.5 border-bone/20")}
                         />
                       )}
                     </div>
@@ -307,7 +307,7 @@ export function CartDrawer() {
                     autoComplete="name"
                     aria-invalid={tried && missName}
                     aria-describedby={tried && missName ? "cart-name-err" : undefined}
-                    className={cx(field, "h-[46px] scroll-my-24", tried && missName ? "border-sumeria-light" : "border-bone/20")}
+                    className={cx(field, "h-11.5 scroll-my-24", tried && missName ? "border-sumeria-light" : "border-bone/20")}
                   />
                   {tried && missName && (
                     <span id="cart-name-err" className="text-[13px] text-sumeria-light">
@@ -327,7 +327,7 @@ export function CartDrawer() {
                         autoComplete="street-address"
                         aria-invalid={tried && missAddr}
                         aria-describedby={tried && missAddr ? "cart-addr-err" : undefined}
-                        className={cx(field, "h-[46px] scroll-my-24", tried && missAddr ? "border-sumeria-light" : "border-bone/20")}
+                        className={cx(field, "h-11.5 scroll-my-24", tried && missAddr ? "border-sumeria-light" : "border-bone/20")}
                       />
                       {tried && missAddr && (
                         <span id="cart-addr-err" className="text-[13px] text-sumeria-light">
@@ -341,7 +341,7 @@ export function CartDrawer() {
                         value={s.addressNote}
                         onChange={(e) => s.set({ addressNote: e.target.value })}
                         placeholder="Ej.: tocar timbre 2B, portón negro"
-                        className={cx(field, "h-[46px] border-bone/20")}
+                        className={cx(field, "h-11.5 border-bone/20")}
                       />
                     </label>
                   </>
@@ -361,9 +361,9 @@ export function CartDrawer() {
             </div>
 
             {/* Con el teclado abierto (mobile) el total se oculta, así no tapa el campo que se está completando. */}
-            <div className={cx("flex flex-col gap-2.5 border-t border-bone/12 bg-[#12100E] px-5 pt-3.5 pb-[18px]", kb.open && "hidden")}>
+            <div className={cx("flex flex-col gap-2.5 border-t border-bone/12 bg-[#12100E] px-5 pt-3.5 pb-4.5", kb.open && "hidden")}>
               <div className="flex items-baseline justify-between">
-                <span className="font-display text-lg tracking-[.1em] uppercase">Total</span>
+                <span className="font-display text-lg tracking-widest uppercase">Total</span>
                 <span className="font-display text-[28px] font-semibold text-sumeria">{money(s.subtotal)}</span>
               </div>
               {sendErr && (
@@ -371,7 +371,7 @@ export function CartDrawer() {
                   Faltan datos: revisá los campos marcados.
                 </span>
               )}
-              <button type="button" onClick={send} className={cx(button({ variant: "primary", size: "lg" }), "py-[17px]")}>
+              <button type="button" onClick={send} className={cx(button({ variant: "primary", size: "lg" }), "py-4.25")}>
                 Enviar pedido por WhatsApp
               </button>
               <span className="text-center text-xs text-stone-3">Se abre WhatsApp con el mensaje listo. Te confirmamos el pedido por ahí.</span>
@@ -391,7 +391,7 @@ function AddMore() {
     <Link
       href="/carta"
       onClick={closeCart}
-      className="group flex h-[60px] flex-none items-center justify-center gap-3 rounded-xs border border-dashed border-bone/25 font-display text-sm font-medium tracking-[.14em] text-bone uppercase transition-colors hover:border-bone/50"
+      className="group flex h-15 flex-none items-center justify-center gap-3 rounded-xs border border-dashed border-bone/25 font-display text-sm font-medium tracking-[.14em] text-bone uppercase transition-colors hover:border-bone/50"
     >
       <span className="flex h-7 min-w-7 -rotate-6 items-center justify-center rounded-xs border-[1.5px] border-dashed border-sumeria font-display text-base leading-none font-semibold text-sumeria transition-[rotate,background-color,color,border-color] duration-200 group-hover:rotate-0 group-hover:border-solid group-hover:border-sumeria-dark group-hover:bg-sumeria-dark group-hover:text-white">
         +
@@ -436,7 +436,7 @@ export function Stepper({
       <button type="button" onClick={onDec} aria-label={`Restar ${name}`} className={cx("text-center", btn)}>
         −
       </button>
-      <span className="min-w-[22px] text-center font-display text-[17px]" aria-live="polite">
+      <span className="min-w-5.5 text-center font-display text-[17px]" aria-live="polite">
         {qty}
       </span>
       <button type="button" onClick={onInc} aria-label={`Sumar ${name}`} className={cx("text-center", btn)}>
@@ -456,10 +456,10 @@ export function CartFab() {
     <button
       type="button"
       onClick={s.openCart}
-      className="fixed right-3 bottom-4 left-3 z-40 flex h-14 items-center justify-between gap-[18px] rounded-xs bg-sumeria-dark px-[18px] text-white shadow-[0_12px_40px_rgba(0,0,0,.55)] hover:bg-sumeria-deep d:right-8 d:left-auto"
+      className="fixed right-3 bottom-4 left-3 z-40 flex h-14 items-center justify-between gap-4.5 rounded-xs bg-sumeria-dark px-4.5 text-white shadow-[0_12px_40px_rgba(0,0,0,.55)] hover:bg-sumeria-deep d:right-8 d:left-auto"
     >
-      <span className="flex items-center gap-2.5 font-display text-base font-semibold tracking-[.1em] uppercase">
-        <span className="flex h-[26px] min-w-[26px] items-center justify-center rounded-full bg-white px-[7px] text-sm tracking-normal text-sumeria-deep">
+      <span className="flex items-center gap-2.5 font-display text-base font-semibold tracking-widest uppercase">
+        <span className="flex h-6.5 min-w-6.5 items-center justify-center rounded-full bg-white px-1.75 text-sm tracking-normal text-sumeria-deep">
           {s.count}
         </span>
         Ver pedido

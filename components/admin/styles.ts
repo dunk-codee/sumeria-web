@@ -15,7 +15,7 @@ export const abtn = cva("inline-flex items-center justify-center gap-1.5 rounded
     size: {
       md: "h-10 px-4 text-sm",
       sm: "h-8 px-3 text-[12.5px]",
-      xs: "h-[30px] px-2.5 text-[12.5px]",
+      xs: "h-7.5 px-2.5 text-[12.5px]",
       none: "",
     },
   },
@@ -33,7 +33,7 @@ export const STATUS_LABEL: Record<TagKind, string> = {
   occ: "Ocupada sin reserva",
   free: "Libre",
 };
-export const statusTag = cva("inline-block rounded border px-2 py-[3px] font-mono text-[10px] whitespace-nowrap uppercase", {
+export const statusTag = cva("inline-block rounded border px-2 py-0.75 font-mono text-[10px] whitespace-nowrap uppercase", {
   variants: {
     status: {
       pend: "border-dashed border-kraft text-kraft",

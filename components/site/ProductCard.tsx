@@ -30,7 +30,7 @@ export function ProductCard({ p, preview = false }: { p: MenuProduct; preview?: 
         alt={p.name}
         off={off}
         bare
-        className={cx("h-[108px] flex-[0_0_108px] rounded-xs bg-black/25 d:aspect-[4/3] d:h-auto d:flex-none d:rounded-none d:bg-transparent", preview && "aspect-[4/3]! h-auto! flex-none! rounded-none!")}
+        className={cx("h-27 flex-[0_0_108px] rounded-xs bg-black/25 d:aspect-4/3 d:h-auto d:flex-none d:rounded-none d:bg-transparent", preview && "aspect-4/3! h-auto! flex-none! rounded-none!")}
         sizes="(max-width: 899px) 108px, 340px"
       />
       <div className={cx("flex min-w-0 flex-1 flex-col gap-1.5 d:gap-2 d:px-5 d:pt-4 d:pb-5", preview && "gap-2! px-5 pt-4 pb-5")}>

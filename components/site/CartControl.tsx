@@ -6,7 +6,7 @@ import { cx } from "@/lib/format";
 import { useSite } from "./SiteProvider";
 
 /** Sello hanko, igual que el del botón del pedido en el header. */
-const SEAL = "flex h-[30px] min-w-[30px] items-center justify-center rounded-xs px-1 font-display text-lg leading-none font-semibold d:h-7 d:min-w-7 d:text-base";
+const SEAL = "flex h-7.5 min-w-7.5 items-center justify-center rounded-xs px-1 font-display text-lg leading-none font-semibold d:h-7 d:min-w-7 d:text-base";
 const STAMP = { type: "spring", stiffness: 700, damping: 22, mass: 0.6 } as const;
 const SIDE = "flex h-11 w-10 items-center justify-center font-display text-[22px] leading-none text-stone-2 transition-colors hover:text-bone active:text-sumeria";
 
@@ -72,7 +72,7 @@ export function CartControl({ id, name }: { id: number; name: string }) {
         −
       </button>
       {/* Contenedor fijo: el sello y la onda se animan por encima sin mover los botones. */}
-      <span className="relative flex h-[30px] min-w-[30px] items-center justify-center d:h-7 d:min-w-7" aria-live="polite">
+      <span className="relative flex h-7.5 min-w-7.5 items-center justify-center d:h-7 d:min-w-7" aria-live="polite">
         <AnimatePresence>
           {ink > 0 && !reduce && (
             <motion.span

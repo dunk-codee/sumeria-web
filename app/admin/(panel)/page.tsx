@@ -59,7 +59,7 @@ export default async function AdminHome() {
             <Link
               key={st.label}
               href={st.href}
-              className={cx("flex flex-col gap-1.5 rounded-md border bg-panel-surface p-[18px] hover:text-panel-text", st.alert ? "border-sumeria/50" : "border-bone/8 hover:border-bone/20")}
+              className={cx("flex flex-col gap-1.5 rounded-md border bg-panel-surface p-4.5 hover:text-panel-text", st.alert ? "border-sumeria/50" : "border-bone/8 hover:border-bone/20")}
             >
               <span className="text-[13px] text-panel-muted">{st.label}</span>
               <span className={cx("font-display text-[40px] leading-none font-semibold", st.alert ? "text-sumeria-light" : "text-panel-text")}>{st.value}</span>

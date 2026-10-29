@@ -31,7 +31,7 @@ export function Switch({ on, onChange, label, sub }: { on: boolean; onChange: (v
   return (
     <button type="button" role="switch" aria-checked={on} aria-label={label} onClick={() => onChange(!on)} className="flex items-center gap-2">
       <span className={cx("relative h-5 w-9 flex-none rounded-full transition-colors", on ? "bg-panel-text" : "bg-smoke-3")}>
-        <span className={cx("absolute top-0.5 h-4 w-4 rounded-full transition-[left]", on ? "left-[18px] bg-panel-bg" : "left-0.5 bg-stone-5")} />
+        <span className={cx("absolute top-0.5 h-4 w-4 rounded-full transition-[left]", on ? "left-4.5 bg-panel-bg" : "left-0.5 bg-stone-5")} />
       </span>
       {sub && <span className="text-[12.5px] text-sand">{sub}</span>}
     </button>
@@ -58,7 +58,7 @@ export function Segmented<T extends string | number>({
           role="radio"
           aria-checked={value === v}
           onClick={() => onChange(v)}
-          className={cx("h-[34px] px-2 text-[13px] font-semibold", value === v ? "bg-panel-text text-panel-bg" : "text-panel-soft hover:text-panel-text")}
+          className={cx("h-8.5 px-2 text-[13px] font-semibold", value === v ? "bg-panel-text text-panel-bg" : "text-panel-soft hover:text-panel-text")}
         >
           {label}
         </button>
@@ -71,7 +71,7 @@ export function Segmented<T extends string | number>({
 
 export function PageHead({ kicker, title, children }: { kicker: ReactNode; title: ReactNode; children?: ReactNode }) {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-4 border-b border-bone/8 px-5 pt-7 pb-[18px] md:px-8">
+    <div className="flex flex-wrap items-end justify-between gap-4 border-b border-bone/8 px-5 pt-7 pb-4.5 md:px-8">
       <div className="flex flex-col gap-1">
         <span className="font-mono text-[11px] tracking-[.08em] text-panel-muted uppercase">{kicker}</span>
         <h1 className="m-0 font-display text-[34px] leading-[1.05] font-semibold uppercase">{title}</h1>
@@ -109,7 +109,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastCtx.Provider value={flash}>
       {children}
-      <div aria-live="polite" className="pointer-events-none fixed bottom-6 left-1/2 z-[80] w-max max-w-[calc(100vw-32px)]">
+      <div aria-live="polite" className="pointer-events-none fixed bottom-6 left-1/2 z-80 w-max max-w-[calc(100vw-32px)]">
         {toast && (
           <div
             key={toast.k}

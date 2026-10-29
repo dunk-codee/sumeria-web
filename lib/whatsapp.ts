@@ -4,10 +4,10 @@ import { money, piecesLabel } from "./format";
 export const waLink = (number: string, text?: string) =>
   `https://wa.me/${number.replace(/\D/g, "")}${text ? `?text=${encodeURIComponent(text)}` : ""}`;
 
-/** "5493442535419" → "3442 15535419" (como se escribe en Argentina). */
+/** "5493442535419" → "+54 9 3442 53-5419" (formato internacional). */
 export function waDisplay(number: string): string {
   const d = number.replace(/\D/g, "").replace(/^549/, "");
-  if (d.length === 10) return `${d.slice(0, 4)} 15${d.slice(4)}`;
+  if (d.length === 10) return `+54 9 ${d.slice(0, 4)} ${d.slice(4, 6)}-${d.slice(6)}`;
   return d;
 }
 

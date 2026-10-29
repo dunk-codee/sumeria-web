@@ -40,7 +40,7 @@ export function EventsBoard({
               aria-selected={on}
               onClick={() => setFilter(id)}
               className={cx(
-                "flex h-10 flex-none items-center gap-2 rounded-xs border px-3.5 font-display text-sm tracking-[.1em] uppercase",
+                "flex h-10 flex-none items-center gap-2 rounded-xs border px-3.5 font-display text-sm tracking-widest uppercase",
                 on ? "border-bone text-bone" : "border-bone/22 text-stone-2",
               )}
             >
@@ -52,7 +52,7 @@ export function EventsBoard({
       </div>
 
       {list.length === 0 ? (
-        <div className="relative flex flex-col items-center gap-3.5 border border-bone/10 bg-[#100E0C] bg-[repeating-linear-gradient(135deg,rgba(255,255,255,.02)_0_1px,transparent_1px_10px)] px-6 py-[72px] text-center">
+        <div className="relative flex flex-col items-center gap-3.5 border border-bone/10 bg-[#100E0C] bg-[repeating-linear-gradient(135deg,rgba(255,255,255,.02)_0_1px,transparent_1px_10px)] px-6 py-18 text-center">
           <XMark size={40} stroke={3.6} className="text-bone" />
           <h2 className="m-0 font-display text-[34px] leading-none font-semibold uppercase">No hay novedades por ahora</h2>
           <p className="m-0 max-w-[42ch] text-base leading-[1.55] text-stone-2">Seguinos en Instagram para enterarte primero de sorteos y promos.</p>
@@ -61,7 +61,7 @@ export function EventsBoard({
           </a>
         </div>
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,340px),1fr))] gap-[18px]">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,340px),1fr))] gap-4.5">
           {list.map((e) => (
             <div key={e.id} className="contents">
               {cards[e.id]}

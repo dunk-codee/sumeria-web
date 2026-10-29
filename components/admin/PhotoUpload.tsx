@@ -15,7 +15,7 @@ export function PhotoUpload({
   folder,
   onChange,
   hint,
-  previewClass = "h-[90px] w-[120px]",
+  previewClass = "h-22.5 w-30",
   ratio = [4, 3],
 }: {
   value: PhotoValue;
@@ -39,7 +39,7 @@ export function PhotoUpload({
         sizes="160px"
         ratio={ratio}
       />
-      <div className="flex min-w-[200px] flex-1 flex-col gap-1.5">
+      <div className="flex min-w-50 flex-1 flex-col gap-1.5">
         <span className="text-sm font-semibold">Foto</span>
         <span className="text-[12.5px] text-panel-muted">{hint}</span>
         <div className="flex flex-wrap items-center gap-2.5">
