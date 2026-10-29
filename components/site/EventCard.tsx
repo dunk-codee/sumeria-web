@@ -15,11 +15,11 @@ const DATE_BLOCK: Record<PublicEvent["type"], string> = {
 export function EventCard({ e, instagram, preview = false }: { e: PublicEvent; instagram: string; preview?: boolean }) {
   const d = eventDateParts(e);
   const cta = ctaHref(e.ctaTarget, instagram);
-  const ctaCls = "mt-auto pt-2 font-display text-[15px] tracking-[.1em] text-bone uppercase hover:text-sumeria";
+  const ctaCls = "mt-auto pt-2 font-display text-[15px] tracking-widest text-bone uppercase hover:text-sumeria";
   const label = `${e.ctaLabel || "Ver más"} →`;
   return (
     <article className="flex flex-col overflow-hidden rounded-xs border border-bone/10 bg-coal">
-      <Photo placeholder={e.placeholder} publicId={e.photoPublicId} url={e.photoUrl} alt={e.title} className="aspect-[16/10]" ratio={[16, 10]} sizes="(max-width: 900px) 100vw, 420px">
+      <Photo placeholder={e.placeholder} publicId={e.photoPublicId} url={e.photoUrl} alt={e.title} className="aspect-16/10" ratio={[16, 10]} sizes="(max-width: 900px) 100vw, 420px">
         <div className={cx("absolute top-0 left-0 px-3.5 pt-2.5 pb-3 text-center", DATE_BLOCK[e.type])}>
           <div className="font-display text-[46px] leading-[.9] font-semibold">{d.day}</div>
           <div className="mt-1 font-display text-[13px] tracking-[.2em]">{d.mon}</div>

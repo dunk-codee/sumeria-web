@@ -22,7 +22,7 @@ export function LoginForm() {
           {state.error}
         </span>
       )}
-      <button type="submit" disabled={pending} className={cx(abtn({ variant: "primary" }), "mt-1 h-[46px] text-[15px]")}>
+      <button type="submit" disabled={pending} className={cx(abtn({ variant: "primary" }), "mt-1 h-11.5 text-[15px]")}>
         {pending ? "Ingresando…" : "Ingresar"}
       </button>
       <span className="text-center text-[13px] text-panel-muted">¿Olvidaste la contraseña? Pedila a DunkCode.</span>

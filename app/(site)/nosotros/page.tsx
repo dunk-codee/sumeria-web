@@ -19,7 +19,7 @@ export default async function NosotrosPage() {
 
   return (
     <section className="px-gutter pt-page pb-20">
-      <div className="mx-auto flex max-w-[1280px] flex-col gap-[clamp(32px,4vw,56px)]">
+      <div className="mx-auto flex max-w-7xl flex-col gap-[clamp(32px,4vw,56px)]">
         <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,400px),1fr))] items-end gap-[clamp(24px,4vw,56px)]">
           <div className="flex flex-col gap-3.5">
             <Eyebrow>Nosotros</Eyebrow>
@@ -30,7 +30,7 @@ export default async function NosotrosPage() {
             </p>
           </div>
           <div
-            className="aspect-[16/10] rounded-xs"
+            className="aspect-16/10 rounded-xs"
             aria-hidden
             style={{
               background:
@@ -48,9 +48,9 @@ export default async function NosotrosPage() {
               title={`Mapa: ${s.address}`}
               src={`https://maps.google.com/maps?q=${mapsQ}&z=16&output=embed`}
               loading="lazy"
-              className="aspect-[4/3] w-full rounded-xs border-0 grayscale-[.6] invert-[.9] hue-rotate-180"
+              className="aspect-4/3 w-full rounded-xs border-0 grayscale-[.6] invert-[.9] hue-rotate-180"
             />
-            <a href={`https://maps.google.com/?q=${mapsQ}`} target="_blank" rel="noopener noreferrer" className="font-display text-[15px] tracking-[.1em] uppercase underline">
+            <a href={`https://maps.google.com/?q=${mapsQ}`} target="_blank" rel="noopener noreferrer" className="font-display text-[15px] tracking-widest uppercase underline">
               Cómo llegar
             </a>
           </div>

@@ -58,6 +58,8 @@ git credential-manager github list   # dunk-codee tiene que aparecer; si no: git
   - `error.tsx` recibe `retry` (no `reset`).
   - `new Date()` / `Math.random()` en render requieren `connection()` o un runtime API antes (en el panel, `requireAdmin()` ya lo hace).
   - Un archivo `"use client"` **no puede exportar helpers** que use el servidor (por eso `components/admin/styles.ts` está separado de `ui.tsx`).
+- **Clases canónicas de Tailwind**: escribí la forma que sugiere Tailwind IntelliSense (`max-w-7xl`, `h-11.5`, `tracking-widest`,
+  `aspect-4/3`) en vez del valor arbitrario equivalente (`max-w-[1280px]`, `h-[46px]`…); si no, el editor marca warnings.
 - **Estilos solo con Tailwind** usando los tokens de `tailwind.config.ts` (`ink`, `bone`, `sumeria`, `kraft`, `stone-*`, `panel-*`, `smoke-*`).
   No uses estilos inline salvo valores dinámicos (posiciones del plano, fondos placeholder). No agregues colores sueltos.
 - Variantes de componentes con `cva` (`components/ui.tsx`, `components/admin/styles.ts`).
@@ -243,7 +245,8 @@ pará `npm run dev` antes de correr `db:seed` o `next build`. Para hacer el buil
 - **Carta** (`app/(site)/carta/page.tsx` + `CartaFilter` / `CartaSection` en `components/site/CategoryBar.tsx`): filtro sticky
   con **"Todas"** (todas las categorías seguidas) y una opción por categoría (muestra **solo** esa). Al tocar un filtro vuelve al
   principio de la carta (la barra queda pegada al header) y la lista entra con un fundido corto. La categoría va en el hash
-  (`/carta#cat-rolls`): los links del inicio y de las novedades abren la carta ya filtrada. La opción activa lleva la X que se
+  (`/carta#cat-rolls`): los links del inicio y de las novedades abren la carta ya filtrada y **arriba de todo**. Las secciones
+  no llevan `id="cat-…"` a propósito: el navegador saltaba a esa ancla y la carta abría por la mitad. La opción activa lleva la X que se
   dibuja trazo por trazo (`NavX`, compartida con el header) en un hueco fijo, así el texto no se mueve. Cuando la barra queda
   pegada al header cambia a fondo `coal` con sombra, para que se note la división entre nav y filtros.
   Botón de agregar (`CartControl`): **sello hanko** como el del header. Sin ítems: "Agregar" + sello punteado rojo con "+"

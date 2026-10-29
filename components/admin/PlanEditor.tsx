@@ -119,7 +119,7 @@ export function PlanEditor({ initial, withUpcoming }: { initial: PlanData; withU
 
   return (
     <>
-      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-bone/8 px-5 pt-7 pb-[18px] md:px-8">
+      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-bone/8 px-5 pt-7 pb-4.5 md:px-8">
         <div className="flex flex-col gap-1">
           <span className="font-mono text-[11px] tracking-[.08em] text-panel-muted uppercase">Reservas</span>
           <h1 className="m-0 font-display text-[34px] leading-[1.05] font-semibold uppercase">Plano del local</h1>
@@ -154,7 +154,7 @@ export function PlanEditor({ initial, withUpcoming }: { initial: PlanData; withU
             {tables.length} mesas · {tables.reduce((a, t) => a + t.capacity, 0)} lugares en total
           </span>
         </div>
-        <div className="flex min-w-[260px] flex-[0_1_300px] flex-col gap-3.5">
+        <div className="flex min-w-65 flex-[0_1_300px] flex-col gap-3.5">
           <Card className="flex flex-col gap-2.5 p-4">
             <span className="text-sm font-semibold">Agregar mesa</span>
             <button

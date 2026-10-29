@@ -19,10 +19,11 @@ export default async function CartaPage() {
     <>
       <CartaIntro pedidosFrom={pedidos.from} />
       <CartaFilter cats={sections.map((c) => ({ slug: c.slug, name: c.name }))}>
-        <div className="mx-auto max-w-[1280px] px-gutter pb-[140px]">
+        <div className="mx-auto max-w-7xl px-gutter pb-35">
           {sections.map((s) => (
             <CartaSection key={s.id} slug={s.slug}>
-              <section id={`cat-${s.slug}`} aria-labelledby={`h-${s.slug}`} className="flex flex-col gap-4 pt-[clamp(36px,4vw,56px)]">
+              {/* Sin id = `cat-…`: el hash es el filtro, no un ancla (el navegador saltaba a la sección). */}
+              <section aria-labelledby={`h-${s.slug}`} className="flex flex-col gap-4 pt-[clamp(36px,4vw,56px)]">
                 <div className="flex items-baseline justify-between gap-3 border-b border-bone/12 pb-2.5">
                   <h2 id={`h-${s.slug}`} className="m-0 font-display text-[clamp(32px,3.6vw,48px)] leading-none font-semibold uppercase">
                     {s.name}

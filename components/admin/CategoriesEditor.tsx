@@ -31,16 +31,16 @@ export function CategoriesEditor({ cats }: { cats: Row[] }) {
     });
 
   return (
-    <div className="flex max-w-[860px] flex-col gap-2.5 px-5 pt-5 pb-12 md:px-8">
+    <div className="flex max-w-215 flex-col gap-2.5 px-5 pt-5 pb-12 md:px-8">
       <span className="text-[13px] text-panel-muted">
         El orden de esta lista es el orden de la barra de categorías en el sitio. Las marcadas como “Inicio” aparecen como accesos directos en la portada.
       </span>
       <Card className="overflow-x-auto">
         {list.map((c, i) => (
-          <div key={c.id} className="flex min-w-[640px] items-center gap-3 border-b border-bone/6 px-3.5 py-2.5 last:border-b-0">
+          <div key={c.id} className="flex min-w-160 items-center gap-3 border-b border-bone/6 px-3.5 py-2.5 last:border-b-0">
             <span className="w-5 font-mono text-xs text-stone-6">{i + 1}</span>
             <div className="flex flex-col">
-              <button type="button" aria-label={`Subir ${c.name}`} disabled={i === 0} onClick={() => move(i, -1)} className={cx("h-[18px] w-7 text-[11px]", i === 0 ? "text-smoke-3" : "text-panel-soft")}>
+              <button type="button" aria-label={`Subir ${c.name}`} disabled={i === 0} onClick={() => move(i, -1)} className={cx("h-4.5 w-7 text-[11px]", i === 0 ? "text-smoke-3" : "text-panel-soft")}>
                 ▲
               </button>
               <button
@@ -48,7 +48,7 @@ export function CategoriesEditor({ cats }: { cats: Row[] }) {
                 aria-label={`Bajar ${c.name}`}
                 disabled={i === list.length - 1}
                 onClick={() => move(i, 1)}
-                className={cx("h-[18px] w-7 text-[11px]", i === list.length - 1 ? "text-smoke-3" : "text-panel-soft")}
+                className={cx("h-4.5 w-7 text-[11px]", i === list.length - 1 ? "text-smoke-3" : "text-panel-soft")}
               >
                 ▼
               </button>
@@ -62,16 +62,16 @@ export function CategoriesEditor({ cats }: { cats: Row[] }) {
                 else e.target.value = c.name;
               }}
               onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-              className="h-[38px] flex-1 rounded border border-transparent bg-transparent px-2.5 font-display text-lg tracking-[.04em] text-panel-text uppercase outline-none hover:border-bone/16 focus:border-panel-text focus:bg-panel-bg"
+              className="h-9.5 flex-1 rounded border border-transparent bg-transparent px-2.5 font-display text-lg tracking-[.04em] text-panel-text uppercase outline-none hover:border-bone/16 focus:border-panel-text focus:bg-panel-bg"
             />
-            <Link href={`/admin/productos/nuevo?cat=${c.id}`} className="w-[100px] text-[13px] text-panel-muted hover:text-panel-text" title="Agregar producto en esta categoría">
+            <Link href={`/admin/productos/nuevo?cat=${c.id}`} className="w-25 text-[13px] text-panel-muted hover:text-panel-text" title="Agregar producto en esta categoría">
               {c.count} productos
             </Link>
-            <span className="flex w-[110px] items-center gap-2">
+            <span className="flex w-27.5 items-center gap-2">
               <Switch on={c.visible} onChange={(v) => patch(c, { visible: v }, v ? `${c.name} visible en la carta.` : `${c.name} oculta en la carta.`)} label={`Visible: ${c.name}`} />
               <span className="text-[12.5px] text-sand">{c.visible ? "Visible" : "Oculta"}</span>
             </span>
-            <span className="flex w-[90px] items-center gap-2">
+            <span className="flex w-22.5 items-center gap-2">
               <Switch on={c.featured} onChange={(v) => patch(c, { featured: v }, v ? `${c.name} aparece en el inicio.` : `${c.name} sale del inicio.`)} label={`En el inicio: ${c.name}`} />
               <span className="text-[12.5px] text-sand">Inicio</span>
             </span>

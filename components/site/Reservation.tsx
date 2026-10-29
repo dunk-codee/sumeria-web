@@ -279,7 +279,7 @@ export function Reservation({ plan, whatsapp, booking }: { plan: PlanData; whats
   const summary = `${shortDate(date)} · ${pp}`;
   const consultHref = waLink(whatsapp, sameDayConsultMessage(people, name));
   const cutoffNotice = cutoff && (
-    <div className="flex flex-col gap-3 rounded-xs border-[1.5px] border-sumeria bg-[#1A0F0E] p-[22px]" role="alert">
+    <div className="flex flex-col gap-3 rounded-xs border-[1.5px] border-sumeria bg-[#1A0F0E] p-5.5" role="alert">
       <div className="flex items-center gap-2.5">
         <XMark size={16} stroke={4} className="text-sumeria" />
         <h3 className="m-0 font-display text-2xl leading-[1.05] font-semibold uppercase">Las reservas online para hoy ya cerraron</h3>
@@ -309,7 +309,7 @@ export function Reservation({ plan, whatsapp, booking }: { plan: PlanData; whats
     <XLoader size={16} label="Buscando mesas…" />
   ) : tier === "none" ? (
     // Tarjeta roja: ícono X + texto (el estado no depende solo del color).
-    <div className="flex max-w-[620px] items-start gap-3 rounded-xs border-[1.5px] border-sumeria bg-alert-bg px-4 py-3.5" role="status">
+    <div className="flex max-w-155 items-start gap-3 rounded-xs border-[1.5px] border-sumeria bg-alert-bg px-4 py-3.5" role="status">
       <XMark size={16} stroke={4} className="mt-0.5 text-sumeria" />
       <span className="text-[15px] leading-normal text-bone">
         No quedan mesas para {pp} este día. Probá otro día o{" "}
@@ -321,7 +321,7 @@ export function Reservation({ plan, whatsapp, booking }: { plan: PlanData; whats
     </div>
   ) : (
     // Tarjeta verde, sin números ni detalles (mesa sola, juntar o separadas): eso se ve en el plano del paso 2.
-    <div className="flex max-w-[620px] items-center gap-3 rounded-xs border-[1.5px] border-ok bg-ok-bg px-4 py-3.5" role="status">
+    <div className="flex max-w-155 items-center gap-3 rounded-xs border-[1.5px] border-ok bg-ok-bg px-4 py-3.5" role="status">
       <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0 text-ok">
         <path d="M5 12.5l4.5 4.5L19 7" />
       </svg>
@@ -391,7 +391,7 @@ export function Reservation({ plan, whatsapp, booking }: { plan: PlanData; whats
                     aria-label={`${longDate(d)}${blocked ? ", sin reservas online" : ""}`}
                     onClick={() => changeQuery(() => setDate(d))}
                     className={cx(
-                      "flex w-[72px] flex-none flex-col items-center gap-[3px] rounded-xs border pt-2.5 pb-3",
+                      "flex w-18 flex-none flex-col items-center gap-0.75 rounded-xs border pt-2.5 pb-3",
                       blocked
                         ? "cursor-not-allowed border-dashed border-bone/18 bg-transparent text-stone-4"
                         : on
@@ -422,19 +422,19 @@ export function Reservation({ plan, whatsapp, booking }: { plan: PlanData; whats
                 type="button"
                 onClick={() => changeQuery(() => setPeople((p) => Math.max(1, p - 1)))}
                 aria-label="Menos personas"
-                className="flex h-[52px] w-[52px] items-center justify-center rounded-xs border border-bone/25 text-[26px]"
+                className="flex h-13 w-13 items-center justify-center rounded-xs border border-bone/25 text-[26px]"
               >
                 −
               </button>
               <div className="flex items-baseline gap-2" aria-live="polite">
                 <span className="font-display text-[42px] leading-none font-semibold">{people}</span>
-                <span className="font-display text-base tracking-[.1em] text-stone-2 uppercase">{plural(people, "persona", "personas")}</span>
+                <span className="font-display text-base tracking-widest text-stone-2 uppercase">{plural(people, "persona", "personas")}</span>
               </div>
               <button
                 type="button"
                 onClick={() => changeQuery(() => setPeople((p) => Math.min(MAX_PEOPLE, p + 1)))}
                 aria-label="Más personas"
-                className="flex h-[52px] w-[52px] items-center justify-center rounded-xs border border-bone/25 text-[26px]"
+                className="flex h-13 w-13 items-center justify-center rounded-xs border border-bone/25 text-[26px]"
               >
                 +
               </button>
@@ -461,7 +461,7 @@ export function Reservation({ plan, whatsapp, booking }: { plan: PlanData; whats
                   if (!singles.size && joined && !selection.length) setSelection(joined.tables);
                   goStep(2);
                 }}
-                className={cx(button({ variant: cutoff || !date || statuses == null ? "disabled" : "primary" }), "w-full max-w-[340px] py-[17px]")}
+                className={cx(button({ variant: cutoff || !date || statuses == null ? "disabled" : "primary" }), "w-full max-w-85 py-4.25")}
               >
                 Ver mesas disponibles
               </button>
@@ -489,7 +489,7 @@ export function Reservation({ plan, whatsapp, booking }: { plan: PlanData; whats
           {cutoffNotice}
 
           {noFree && (
-            <div className="flex flex-col gap-3 rounded-xs border-[1.5px] border-sumeria bg-[#1A0F0E] p-[22px]">
+            <div className="flex flex-col gap-3 rounded-xs border-[1.5px] border-sumeria bg-[#1A0F0E] p-5.5">
               <div className="flex items-center gap-2.5">
                 <XMark size={16} stroke={4} className="text-sumeria" />
                 <h3 className="m-0 font-display text-2xl leading-[1.05] font-semibold uppercase">No quedan mesas para {people} este día</h3>
@@ -501,7 +501,7 @@ export function Reservation({ plan, whatsapp, booking }: { plan: PlanData; whats
                 <button type="button" onClick={() => goStep(1)} className={button({ variant: "outline", size: "sm" })}>
                   Elegir otro día
                 </button>
-                <a href={waLink(whatsapp)} target="_blank" rel="noopener noreferrer" className="px-1 py-3 font-display text-sm tracking-[.1em] uppercase underline">
+                <a href={waLink(whatsapp)} target="_blank" rel="noopener noreferrer" className="px-1 py-3 font-display text-sm tracking-widest uppercase underline">
                   Escribinos por WhatsApp
                 </a>
               </div>
@@ -509,7 +509,7 @@ export function Reservation({ plan, whatsapp, booking }: { plan: PlanData; whats
           )}
 
           {pairs.length > 0 && (
-            <div className="flex flex-col gap-3 rounded-xs border border-bone/14 bg-coal p-[18px]">
+            <div className="flex flex-col gap-3 rounded-xs border border-bone/14 bg-coal p-4.5">
               <h3 className="m-0 font-display text-xl leading-[1.05] font-semibold tracking-[.06em] uppercase">Juntar mesas</h3>
               <p className="m-0 text-[14.5px] leading-normal text-sand">
                 {tier === "apart"
@@ -544,14 +544,14 @@ export function Reservation({ plan, whatsapp, booking }: { plan: PlanData; whats
 
           <div className="flex flex-wrap items-start gap-6">
             <div className="flex min-w-0 flex-[1_1_560px] flex-col gap-2.5">
-              <div className="flex flex-wrap justify-between gap-2.5 font-mono text-[10.5px] tracking-[.05em] text-stone-3 uppercase">
+              <div className="flex flex-wrap justify-between gap-2.5 font-mono text-[10.5px] tracking-wider text-stone-3 uppercase">
                 <span>Plano del salón · vista desde arriba</span>
               </div>
               {renderPlan(noFree)}
             </div>
-            <div className="flex flex-[1_1_280px] flex-col gap-[18px]">
+            <div className="flex flex-[1_1_280px] flex-col gap-4.5">
               <div className="flex flex-col gap-2.5">
-                <span className="font-mono text-[10.5px] tracking-[.05em] text-stone-3 uppercase">Referencias</span>
+                <span className="font-mono text-[10.5px] tracking-wider text-stone-3 uppercase">Referencias</span>
                 <Legend items={legend} />
               </div>
               <div className={cx("flex flex-col gap-1.5 rounded-xs border bg-coal p-4", selTables.length ? "border-sumeria" : "border-bone/14")} aria-live="polite">
@@ -575,7 +575,7 @@ export function Reservation({ plan, whatsapp, booking }: { plan: PlanData; whats
                 type="button"
                 disabled={!selTables.length || cutoff}
                 onClick={() => selTables.length && !cutoff && goStep(3)}
-                className={cx(button({ variant: selTables.length && !cutoff ? "primary" : "disabled" }), "py-[17px]")}
+                className={cx(button({ variant: selTables.length && !cutoff ? "primary" : "disabled" }), "py-4.25")}
               >
                 Continuar
               </button>
@@ -604,7 +604,7 @@ export function Reservation({ plan, whatsapp, booking }: { plan: PlanData; whats
                   placeholder="Cómo te llamás"
                   autoComplete="name"
                   aria-invalid={nameErr}
-                  className={cx(field, "h-[50px]", nameErr ? "border-sumeria-light" : "border-bone/20")}
+                  className={cx(field, "h-12.5", nameErr ? "border-sumeria-light" : "border-bone/20")}
                 />
               </label>
               <label className="flex flex-col gap-1.5">
@@ -616,7 +616,7 @@ export function Reservation({ plan, whatsapp, booking }: { plan: PlanData; whats
                   autoComplete="tel"
                   placeholder="3442 15 000000"
                   aria-invalid={phoneErr}
-                  className={cx(field, "h-[50px]", phoneErr ? "border-sumeria-light" : "border-bone/20")}
+                  className={cx(field, "h-12.5", phoneErr ? "border-sumeria-light" : "border-bone/20")}
                 />
               </label>
               <label className="flex flex-col gap-1.5">
@@ -643,12 +643,12 @@ export function Reservation({ plan, whatsapp, booking }: { plan: PlanData; whats
                 </span>
               )}
               {cutoffNotice}
-              <button type="submit" disabled={sending || cutoff} className={cx(button({ variant: cutoff ? "disabled" : "primary" }), "py-[17px]")}>
+              <button type="submit" disabled={sending || cutoff} className={cx(button({ variant: cutoff ? "disabled" : "primary" }), "py-4.25")}>
                 {sending ? "Enviando…" : cutoff ? "Reservas de hoy cerradas" : "Enviar reserva"}
               </button>
               <span className="text-[13px] leading-normal text-stone-3">La reserva queda pendiente hasta que te confirmemos por WhatsApp.</span>
             </form>
-            <div className="flex flex-col gap-3.5 rounded-xs border border-bone/14 bg-coal p-[22px]">
+            <div className="flex flex-col gap-3.5 rounded-xs border border-bone/14 bg-coal p-5.5">
               <span className="font-mono text-[10.5px] text-stone-3 uppercase">Resumen</span>
               <span className="font-display text-[34px] leading-none font-semibold uppercase">{selLabel}</span>
               <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-[15px]">
@@ -672,14 +672,14 @@ export function Reservation({ plan, whatsapp, booking }: { plan: PlanData; whats
       )}
 
       {step === 4 && last && (
-        <div className="flex max-w-[620px] flex-col gap-[18px]" role="status">
+        <div className="flex max-w-155 flex-col gap-4.5" role="status">
           <XMark size={64} stroke={3.6} className="text-sumeria" />
           <h2 className="m-0 font-display text-[clamp(40px,5vw,64px)] leading-[.95] font-semibold uppercase">Recibimos tu reserva.</h2>
           <p className="m-0 text-xl leading-[1.4]">Te confirmamos por WhatsApp.</p>
           <div className="flex flex-col gap-3 rounded-xs border border-bone/14 bg-coal p-5">
             <div className="flex flex-wrap items-center justify-between gap-2.5">
               <span className="font-display text-[26px] font-semibold uppercase">{last.table}</span>
-              <span className="rounded-xs border-[1.5px] border-dashed border-kraft px-[9px] py-1 font-mono text-[10.5px] text-kraft uppercase">
+              <span className="rounded-xs border-[1.5px] border-dashed border-kraft px-2.25 py-1 font-mono text-[10.5px] text-kraft uppercase">
                 Pendiente de confirmar
               </span>
             </div>
@@ -732,7 +732,7 @@ function Legend({ items }: { items: { kind: SiteTableKind; mark: string; label: 
     <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
       {items.map((l) => (
         <li key={l.kind} className="flex items-center gap-3">
-          <span className={cx("flex h-[26px] w-[34px] flex-none items-center justify-center rounded font-mono text-[9px]", SITE_TABLE[l.kind])}>{l.mark}</span>
+          <span className={cx("flex h-6.5 w-8.5 flex-none items-center justify-center rounded font-mono text-[9px]", SITE_TABLE[l.kind])}>{l.mark}</span>
           <div className="flex flex-col">
             <span className="text-sm font-semibold">{l.label}</span>
             <span className="text-[12.5px] text-stone-3">{l.desc}</span>

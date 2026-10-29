@@ -21,10 +21,10 @@ export default async function SiteLayout({ children }: LayoutProps<"/">) {
     <SiteProvider products={products} whatsapp={settings.whatsapp} pickupAddress={settings.address}>
       <SiteHeader />
       <main>{children}</main>
-      <footer className="border-t border-bone/12 px-gutter pt-10 pb-[100px]">
-        <div className="mx-auto flex max-w-[1280px] flex-wrap items-start justify-between gap-6">
+      <footer className="border-t border-bone/12 px-gutter pt-10 pb-25">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-start justify-between gap-6">
           <div className="flex flex-col gap-3.5">
-            <Image src="/brand/sumeria-logo.png" alt="Sumeria Sushi" width={1187} height={154} className="h-auto w-[180px]" />
+            <Image src="/brand/sumeria-logo.png" alt="Sumeria Sushi" width={1187} height={154} className="h-auto w-45" />
             <span className="text-sm leading-relaxed text-stone-3">
               {settings.address} · {settings.city.split(",")[0]}
               <br />
@@ -53,7 +53,7 @@ export default async function SiteLayout({ children }: LayoutProps<"/">) {
             </div>
           </div>
         </div>
-        <div className="mx-auto mt-5 flex max-w-[1280px] items-center gap-1.5 font-mono text-[10.5px] text-stone-4 uppercase">
+        <div className="mx-auto mt-5 flex max-w-7xl items-center gap-1.5 font-mono text-[10.5px] text-stone-4 uppercase">
           © Sumeria Sushi 2026 · Diseñada por{" "}
           <a href="https://dunkcode.dev" target="_blank" rel="noopener" className="inline-flex min-h-11 items-center text-stone-2 underline-offset-2 transition-colors hover:text-bone hover:underline">
             DunkCode

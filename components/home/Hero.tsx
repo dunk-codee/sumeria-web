@@ -101,7 +101,7 @@ function HeroVideo() {
         preload="auto"
         className={cx(
           "absolute inset-0 h-full w-full origin-[55%_50%] object-cover object-[55%_50%]",
-          !skip && "transition-[scale] duration-[2000ms] ease-[cubic-bezier(.2,.7,.2,1)]",
+          !skip && "transition-[scale] duration-2000 ease-[cubic-bezier(.2,.7,.2,1)]",
           settled && "scale-103",
         )}
       >
@@ -111,7 +111,7 @@ function HeroVideo() {
       <div
         className={cx(
           "absolute inset-0 bg-black",
-          !skip && "transition-opacity duration-[2500ms] ease-out",
+          !skip && "transition-opacity duration-2500 ease-out",
           settled ? "opacity-35" : "opacity-0",
         )}
       />
@@ -140,7 +140,7 @@ function HeroCta({
     <MotionLink
       {...props}
       className={cx(
-        "group flex h-[52px] items-center gap-3.5 font-display text-[clamp(16px,1.6vw,19px)] font-medium tracking-[.16em] whitespace-nowrap text-bone uppercase",
+        "group flex h-13 items-center gap-3.5 font-display text-[clamp(16px,1.6vw,19px)] font-medium tracking-[.16em] whitespace-nowrap text-bone uppercase",
         className,
       )}
     >
@@ -227,7 +227,7 @@ export function Hero({ salonFrom, address }: { salonFrom: string; address: strin
         transition={at(0, 1.2, "easeOut")}
       />
 
-      <div className="relative mx-auto flex w-full max-w-[1280px] flex-col gap-[22px] px-gutter pt-[calc(56px+40px)] pb-[clamp(28px,4vw,52px)]">
+      <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-5.5 px-gutter pt-24 pb-[clamp(28px,4vw,52px)]">
         {/* data-hero-logo: el header muestra su logo recién cuando este sale de la vista. */}
         <h1 data-hero-logo aria-label="Sumeria Sushi" className="m-0 flex w-[min(100%,760px)] items-center gap-[2.4%]">
           <svg
@@ -247,7 +247,7 @@ export function Hero({ salonFrom, address }: { salonFrom: string; address: strin
           {/* "SUMERIA" recortado del logo horizontal (x 160–1072 de 1187 px); el aspect-ratio reserva el espacio. */}
           <motion.span
             aria-hidden
-            className={cx("relative block aspect-[912/154] min-w-0 flex-1 overflow-hidden", REDUCED)}
+            className={cx("relative block aspect-912/154 min-w-0 flex-1 overflow-hidden", REDUCED)}
             initial={from({ clipPath: "inset(0 100% 0 0)" })}
             animate={{ clipPath: "inset(0 0% 0 0)" }}
             transition={at(0.9, 0.9, EASE_WIPE)}
@@ -293,7 +293,7 @@ export function Hero({ salonFrom, address }: { salonFrom: string; address: strin
 
         <motion.div
           className={cx(
-            "mt-[clamp(6px,2vw,22px)] flex flex-wrap items-center gap-x-[18px] gap-y-1.5 border-t border-bone/12 pt-[18px] font-display text-[clamp(13px,1.3vw,16px)] tracking-[.12em] uppercase",
+            "mt-[clamp(6px,2vw,22px)] flex flex-wrap items-center gap-x-4.5 gap-y-1.5 border-t border-bone/12 pt-4.5 font-display text-[clamp(13px,1.3vw,16px)] tracking-[.12em] uppercase",
             REDUCED,
           )}
           initial={from({ opacity: 0 })}

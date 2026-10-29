@@ -26,7 +26,7 @@ function HeaderLogo() {
     transition: { pathLength: { delay, duration, ease }, opacity: { delay, duration: 0.01 } },
   });
   return (
-    <motion.span className="flex h-[19px] items-center" exit={{ opacity: 0, transition: { duration: 0.15 } }}>
+    <motion.span className="flex h-4.75 items-center" exit={{ opacity: 0, transition: { duration: 0.15 } }}>
       {/* Al pasar el mouse la X gira 180° y frena, como el loader. */}
       <svg
         viewBox="0 0 420 434"
@@ -35,14 +35,14 @@ function HeaderLogo() {
         strokeWidth={74}
         strokeLinecap="round"
         aria-hidden
-        className="h-[19px] w-[18.4px] shrink-0 overflow-visible text-sumeria transition-transform duration-700 ease-[cubic-bezier(.6,0,.3,1)] group-hover:rotate-180 group-focus-visible:rotate-180 motion-reduce:transition-none"
+        className="h-4.75 w-[18.4px] shrink-0 overflow-visible text-sumeria transition-transform duration-700 ease-[cubic-bezier(.6,0,.3,1)] group-hover:rotate-180 group-focus-visible:rotate-180 motion-reduce:transition-none"
       >
         <motion.path d={LOGO_X.long} {...draw(0, 0.45, EASE_STROKE)} />
         <motion.path d={LOGO_X.top} {...draw(0.4, 0.2, "easeOut")} />
         <motion.path d={LOGO_X.bottom} {...draw(0.5, 0.2, "easeOut")} />
       </svg>
       <motion.span
-        className="relative block aspect-[1037/154] h-full overflow-hidden"
+        className="relative block aspect-1037/154 h-full overflow-hidden"
         initial={reduce ? false : { clipPath: "inset(0 100% 0 0)" }}
         animate={{ clipPath: "inset(0 0% 0 0)" }}
         transition={{ delay: 0.3, duration: 0.55, ease: EASE_WIPE }}
@@ -80,7 +80,7 @@ function useLogoVisible(path: string) {
  */
 function CartButton({ count, onClick }: { count: number; onClick: () => void }) {
   const reduce = useReducedMotion();
-  const seal = "flex h-[26px] min-w-[26px] items-center justify-center rounded-xs px-1 font-display text-[15px] leading-none font-semibold tracking-normal";
+  const seal = "flex h-6.5 min-w-6.5 items-center justify-center rounded-xs px-1 font-display text-[15px] leading-none font-semibold tracking-normal";
   return (
     <button
       type="button"
@@ -93,7 +93,7 @@ function CartButton({ count, onClick }: { count: number; onClick: () => void }) 
     >
       <span>Pedido</span>
       {/* Contenedor fijo: el sello se anima por encima sin mover el texto. */}
-      <span className="flex h-[26px] min-w-[26px] items-center justify-center">
+      <span className="flex h-6.5 min-w-6.5 items-center justify-center">
         <AnimatePresence initial={false} mode="popLayout">
           {count > 0 ? (
             <motion.span
@@ -129,11 +129,11 @@ function CartButton({ count, onClick }: { count: number; onClick: () => void }) 
  * que al abrir se cruzan en una X roja, con las mismas puntas redondeadas que la X de la marca.
  */
 function MenuIcon({ open }: { open: boolean }) {
-  const bar = cx("absolute right-0 h-[2px] rounded-full transition-colors duration-300", open ? "bg-sumeria" : "bg-bone");
+  const bar = cx("absolute right-0 h-0.5 rounded-full transition-colors duration-300", open ? "bg-sumeria" : "bg-bone");
   const spring = { type: "spring", stiffness: 420, damping: 28 } as const;
   return (
-    <span aria-hidden className="relative block h-3.5 w-[22px]">
-      <motion.span className={cx(bar, "top-0 w-[22px]")} initial={false} animate={open ? { y: 6, rotate: 45 } : { y: 0, rotate: 0 }} transition={spring} />
+    <span aria-hidden className="relative block h-3.5 w-5.5">
+      <motion.span className={cx(bar, "top-0 w-5.5")} initial={false} animate={open ? { y: 6, rotate: 45 } : { y: 0, rotate: 0 }} transition={spring} />
       <motion.span
         className={cx(bar, "bottom-0")}
         initial={false}
@@ -169,12 +169,12 @@ export function SiteHeader() {
         aria-label="Sumeria Sushi, inicio"
         aria-hidden={logoVisible ? undefined : true}
         tabIndex={logoVisible ? undefined : -1}
-        className={cx("group flex h-11 w-[146px] shrink-0 items-center", !logoVisible && "pointer-events-none")}
+        className={cx("group flex h-11 w-36.5 shrink-0 items-center", !logoVisible && "pointer-events-none")}
       >
         <AnimatePresence initial={false}>{logoVisible && <HeaderLogo key="logo" />}</AnimatePresence>
       </Link>
 
-      <nav className="hidden items-center gap-[30px] d:flex" aria-label="Principal">
+      <nav className="hidden items-center gap-7.5 d:flex" aria-label="Principal">
         {NAV.map((n) => {
           const active = isActive(path, n.href);
           return (
@@ -228,7 +228,7 @@ export function MobileMenu({ whatsapp, instagram, address, salonFrom }: { whatsa
         <motion.div
           id="menu-mobile"
           key="menu-mobile"
-          className="fixed inset-x-0 top-14 bottom-0 z-[45] flex flex-col gap-7 overflow-y-auto bg-ink px-5 py-7 d:hidden"
+          className="fixed inset-x-0 top-14 bottom-0 z-45 flex flex-col gap-7 overflow-y-auto bg-ink px-5 py-7 d:hidden"
           initial={reduce ? false : { clipPath: "inset(0 0 100% 0)" }}
           animate={{ clipPath: "inset(0 0 0% 0)" }}
           exit={reduce ? { opacity: 0, transition: { duration: 0 } } : { clipPath: "inset(0 0 100% 0)", transition: { duration: 0.3, ease: EASE_WIPE } }}
@@ -248,7 +248,7 @@ export function MobileMenu({ whatsapp, instagram, address, salonFrom }: { whatsa
                     )}
                   >
                     {/* Hueco reservado en todas las secciones: la X aparece sin correr el texto. */}
-                    <span className="flex w-[18px] shrink-0">{active && <NavX size={18} />}</span>
+                    <span className="flex w-4.5 shrink-0">{active && <NavX size={18} />}</span>
                     {n.label}
                   </Link>
                 </motion.div>
@@ -263,7 +263,7 @@ export function MobileMenu({ whatsapp, instagram, address, salonFrom }: { whatsa
               href={waLink(whatsapp)}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-xs bg-sumeria-dark p-[15px] text-center font-display text-base font-semibold tracking-[.1em] text-white uppercase hover:bg-sumeria-deep hover:text-white"
+              className="rounded-xs bg-sumeria-dark p-3.75 text-center font-display text-base font-semibold tracking-widest text-white uppercase hover:bg-sumeria-deep hover:text-white"
             >
               WhatsApp
             </a>
@@ -271,7 +271,7 @@ export function MobileMenu({ whatsapp, instagram, address, salonFrom }: { whatsa
               href={`https://instagram.com/${instagram}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-xs border-[1.5px] border-bone p-[13.5px] text-center font-display text-base font-semibold tracking-[.1em] uppercase hover:bg-bone hover:text-ink"
+              className="rounded-xs border-[1.5px] border-bone p-[13.5px] text-center font-display text-base font-semibold tracking-widest uppercase hover:bg-bone hover:text-ink"
             >
               @{instagram}
             </a>

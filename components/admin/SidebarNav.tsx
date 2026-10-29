@@ -22,10 +22,10 @@ export function SidebarNav({ email, pending }: { email: string; pending: number 
   const path = usePathname();
   const active = (href: string) => (href === "/admin" ? path === "/admin" : path.startsWith(href));
   return (
-    <aside className="flex flex-col border-b border-bone/8 bg-panel-surface md:w-[236px] md:flex-none md:border-r md:border-b-0">
-      <div className="flex items-center justify-between gap-2 border-bone/8 px-5 pt-4 pb-3 md:flex-col md:items-start md:border-b md:pt-[22px] md:pb-[18px]">
+    <aside className="flex flex-col border-b border-bone/8 bg-panel-surface md:w-59 md:flex-none md:border-r md:border-b-0">
+      <div className="flex items-center justify-between gap-2 border-bone/8 px-5 pt-4 pb-3 md:flex-col md:items-start md:border-b md:pt-5.5 md:pb-4.5">
         <Link href="/admin" className="flex flex-col gap-2">
-          <Image src="/brand/sumeria-logo.png" alt="Sumeria Sushi" width={1187} height={154} className="h-auto w-[120px] md:w-[140px]" />
+          <Image src="/brand/sumeria-logo.png" alt="Sumeria Sushi" width={1187} height={154} className="h-auto w-30 md:w-35" />
           <span className="hidden font-mono text-[10px] tracking-[.18em] text-panel-muted uppercase md:block">Panel</span>
         </Link>
         <form action={logout} className="md:hidden">
@@ -59,7 +59,7 @@ export function SidebarNav({ email, pending }: { email: string; pending: number 
           );
         })}
       </nav>
-      <div className="hidden flex-col gap-2.5 border-t border-bone/8 px-5 pt-3.5 pb-[18px] text-[13px] md:flex">
+      <div className="hidden flex-col gap-2.5 border-t border-bone/8 px-5 pt-3.5 pb-4.5 text-[13px] md:flex">
         <Link href="/" target="_blank" className="text-sand">
           Ver el sitio →
         </Link>

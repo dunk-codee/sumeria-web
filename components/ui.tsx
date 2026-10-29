@@ -7,7 +7,7 @@ import { RedX } from "./XMark";
 /* ---------- Botones del sitio ---------- */
 
 export const button = cva(
-  "inline-flex items-center justify-center gap-2 rounded-xs border-[1.5px] text-center font-display font-semibold uppercase tracking-[.1em] transition-colors disabled:cursor-not-allowed",
+  "inline-flex items-center justify-center gap-2 rounded-xs border-[1.5px] text-center font-display font-semibold uppercase tracking-widest transition-colors disabled:cursor-not-allowed",
   {
     variants: {
       variant: {
@@ -19,9 +19,9 @@ export const button = cva(
         disabled: "border-transparent bg-smoke-1 text-stone-4 hover:text-stone-4",
       },
       size: {
-        lg: "px-6 py-[15px] text-base",
+        lg: "px-6 py-3.75 text-base",
         md: "px-5 py-3 text-[15px]",
-        sm: "px-[18px] py-[11px] text-sm",
+        sm: "px-4.5 py-2.75 text-sm",
       },
     },
     defaultVariants: { variant: "primary", size: "lg" },
@@ -75,7 +75,7 @@ export function SectionTitle({ children, className }: { children: ReactNode; cla
 /* ---------- Etiquetas ---------- */
 
 export const typeTag = cva(
-  "inline-block rounded-xs border-[1.5px] px-[9px] py-1 font-display text-xs font-semibold tracking-[.16em] uppercase",
+  "inline-block rounded-xs border-[1.5px] px-2.25 py-1 font-display text-xs font-semibold tracking-[.16em] uppercase",
   {
     variants: {
       type: {
@@ -104,5 +104,5 @@ export function MetaTag({ children, tone }: { children: ReactNode; tone: "gf" | 
 }
 
 export function SampleNote({ children }: { children: ReactNode }) {
-  return <span className="font-mono text-[10px] tracking-[.05em] text-stone-4 uppercase">{children}</span>;
+  return <span className="font-mono text-[10px] tracking-wider text-stone-4 uppercase">{children}</span>;
 }

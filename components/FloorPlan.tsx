@@ -136,10 +136,10 @@ export function FloorPlan({
       {...containerProps}
       className={cx(
         "relative w-full border",
-        portrait ? "aspect-[7/10]" : "aspect-[10/7]",
+        portrait ? "aspect-7/10" : "aspect-10/7",
         grid === "dots"
           ? "bg-dots border-bone/40"
-          : "border-bone/35 bg-ink bg-[linear-gradient(rgba(244,241,236,.05)_1px,transparent_1px),linear-gradient(90deg,rgba(244,241,236,.05)_1px,transparent_1px)] bg-[length:5%_7.142%]",
+          : "border-bone/35 bg-ink bg-[linear-gradient(rgba(244,241,236,.05)_1px,transparent_1px),linear-gradient(90deg,rgba(244,241,236,.05)_1px,transparent_1px)] bg-size-[5%_7.142%]",
         className,
       )}
     >

@@ -22,12 +22,24 @@ export function CartaFilter({ cats, children }: { cats: { slug: string; name: st
   const barRef = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
 
-  // Deep link /carta#cat-bagels (al cargar y si cambia el hash estando en la carta).
+  // Al principio de la carta: la barra queda pegada al header y abajo arranca la lista.
+  function toListStart() {
+    const top = topRef.current;
+    if (!top) return;
+    const y = top.getBoundingClientRect().top + window.scrollY - HEADER;
+    if (window.scrollY > y) window.scrollTo({ top: y, behavior: "instant" });
+  }
+
+  // Deep link /carta#cat-bagels (al cargar y si cambia el hash estando en la carta). Al llegar con una categoría
+  // la página arranca arriba de todo; si el hash cambia estando en la carta, vuelve al principio de la lista.
   useEffect(() => {
-    const fromHash = () => {
+    const fromHash = (e?: HashChangeEvent) => {
       const hash = decodeURIComponent(location.hash.slice(1));
       const slug = hash.startsWith("cat-") ? hash.slice(4) : null;
       setActive(slug && cats.some((c) => c.slug === slug) ? slug : null);
+      if (!slug) return;
+      if (e) toListStart();
+      else window.scrollTo({ top: 0, behavior: "instant" });
     };
     fromHash();
     window.addEventListener("hashchange", fromHash);
@@ -59,12 +71,7 @@ export function CartaFilter({ cats, children }: { cats: { slug: string; name: st
   function choose(slug: string | null) {
     setActive(slug);
     history.replaceState(null, "", slug ? `#cat-${slug}` : location.pathname + location.search);
-    // Al principio de la carta: la barra queda pegada al header y abajo arranca la lista.
-    const top = topRef.current;
-    if (top) {
-      const y = top.getBoundingClientRect().top + window.scrollY - HEADER;
-      if (window.scrollY > y) window.scrollTo({ top: y, behavior: "instant" });
-    }
+    toListStart();
   }
 
   const options = [{ slug: null, name: "Todas" }, ...cats];
@@ -78,7 +85,7 @@ export function CartaFilter({ cats, children }: { cats: { slug: string; name: st
           stuck ? "border-bone/16 bg-coal/96 shadow-[0_12px_24px_-10px] shadow-black/80" : "border-bone/12 bg-ink/94",
         )}
       >
-        <div ref={barRef} role="group" aria-label="Filtrar por categoría" className="no-scrollbar relative mx-auto flex max-w-[1280px] gap-1 overflow-x-auto px-[clamp(12px,5vw,64px)]">
+        <div ref={barRef} role="group" aria-label="Filtrar por categoría" className="no-scrollbar relative mx-auto flex max-w-7xl gap-1 overflow-x-auto px-[clamp(12px,5vw,64px)]">
           {options.map((c) => {
             const on = c.slug === active;
             return (
@@ -90,7 +97,7 @@ export function CartaFilter({ cats, children }: { cats: { slug: string; name: st
                 onClick={() => choose(c.slug)}
                 className={cx(
                   // Hueco fijo a la izquierda para la X: el texto no se mueve al activarse.
-                  "relative flex h-[52px] flex-none items-center pr-3 pl-6 font-display text-base font-medium tracking-[.1em] whitespace-nowrap uppercase transition-colors hover:text-bone",
+                  "relative flex h-13 flex-none items-center pr-3 pl-6 font-display text-base font-medium tracking-widest whitespace-nowrap uppercase transition-colors hover:text-bone",
                   on ? "text-bone" : "text-stone-5",
                 )}
               >

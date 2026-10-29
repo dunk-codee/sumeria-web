@@ -71,7 +71,7 @@ export function ReservationsBoard({ date, view, days, today, week, plan, address
 
   return (
     <>
-      <div className="flex flex-col gap-[18px] border-b border-bone/8 px-5 pt-7 pb-[18px] md:px-8">
+      <div className="flex flex-col gap-4.5 border-b border-bone/8 px-5 pt-7 pb-4.5 md:px-8">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="flex flex-col gap-1">
             <span className="font-mono text-[11px] tracking-[.08em] text-panel-muted uppercase">Reservas</span>
@@ -111,7 +111,7 @@ export function ReservationsBoard({ date, view, days, today, week, plan, address
                   href={href({ date: d, view })}
                   aria-current={on ? "date" : undefined}
                   className={cx(
-                    "flex w-[58px] flex-none flex-col items-center gap-px rounded border py-[7px] text-panel-text hover:text-panel-text",
+                    "flex w-14.5 flex-none flex-col items-center gap-px rounded border py-1.75 text-panel-text hover:text-panel-text",
                     on ? "border-panel-text bg-panel-hover" : "border-bone/14",
                   )}
                 >
@@ -145,7 +145,7 @@ export function ReservationsBoard({ date, view, days, today, week, plan, address
           ) : (
             <Card className="overflow-x-auto">
               <div role="table" aria-label="Reservas del día">
-                <div role="row" className="grid min-w-[900px] grid-cols-[56px_minmax(150px,1.4fr)_50px_130px_84px_120px_minmax(240px,1.6fr)] gap-3 border-b border-bone/8 px-[18px] py-2.5 font-mono text-[10.5px] text-panel-muted uppercase">
+                <div role="row" className="grid min-w-225 grid-cols-[56px_minmax(150px,1.4fr)_50px_130px_84px_120px_minmax(240px,1.6fr)] gap-3 border-b border-bone/8 px-4.5 py-2.5 font-mono text-[10.5px] text-panel-muted uppercase">
                   {["Hora", "Cliente", "Pers.", "Mesa", "Origen", "Estado", "Acciones"].map((h) => (
                     <span key={h} role="columnheader">
                       {h}
@@ -157,7 +157,7 @@ export function ReservationsBoard({ date, view, days, today, week, plan, address
                     key={r.id}
                     role="row"
                     className={cx(
-                      "grid min-w-[900px] grid-cols-[56px_minmax(150px,1.4fr)_50px_130px_84px_120px_minmax(240px,1.6fr)] items-center gap-3 border-b border-bone/6 px-[18px] py-3 last:border-b-0",
+                      "grid min-w-225 grid-cols-[56px_minmax(150px,1.4fr)_50px_130px_84px_120px_minmax(240px,1.6fr)] items-center gap-3 border-b border-bone/6 px-4.5 py-3 last:border-b-0",
                       r.status === "canc" && "opacity-55",
                     )}
                   >
@@ -185,7 +185,7 @@ export function ReservationsBoard({ date, view, days, today, week, plan, address
                         disabled={r.status === "canc" || a.pending}
                         aria-label={`Mesa de ${r.name}`}
                         onChange={(e) => a.move(r, Number(e.target.value))}
-                        className="h-[34px] rounded border border-bone/16 bg-panel-bg px-2 text-[13px] text-panel-text"
+                        className="h-8.5 rounded border border-bone/16 bg-panel-bg px-2 text-[13px] text-panel-text"
                       >
                         {tableOptions(r).map((o) => (
                           <option key={o.n} value={o.n} disabled={o.busy}>
@@ -223,7 +223,7 @@ export function ReservationsBoard({ date, view, days, today, week, plan, address
                         </>
                       )}
                       {r.status === "canc" && (
-                        <AButton variant="link" disabled={a.pending} onClick={() => a.restore(r)} className="h-[30px] px-1 text-[12.5px]">
+                        <AButton variant="link" disabled={a.pending} onClick={() => a.restore(r)} className="h-7.5 px-1 text-[12.5px]">
                           Restaurar
                         </AButton>
                       )}
@@ -248,13 +248,13 @@ export function ReservationsBoard({ date, view, days, today, week, plan, address
                 ] as const
               ).map(([k, label]) => (
                 <div key={k} className="flex items-center gap-2">
-                  <span className={cx("h-[18px] w-[26px] rounded", PANEL_TABLE[k])} />
+                  <span className={cx("h-4.5 w-6.5 rounded", PANEL_TABLE[k])} />
                   <span className="text-[12.5px] text-sand">{label}</span>
                 </div>
               ))}
             </div>
           </div>
-          <Card className="flex min-w-[280px] flex-[0_1_320px] flex-col gap-3 p-[18px]">
+          <Card className="flex min-w-70 flex-[0_1_320px] flex-col gap-3 p-4.5">
             {!selT ? (
               <>
                 <span className="text-[15px] font-semibold">Tocá una mesa</span>

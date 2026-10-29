@@ -95,24 +95,24 @@ export function EventsEditor({ events, cats, today, instagram, startNew }: { eve
                 st.label === "Vencido" && "opacity-55",
               )}
             >
-              <Photo placeholder={e.placeholder} publicId={e.photoPublicId} url={e.photoUrl} alt="" className="h-[54px] w-[72px] flex-none rounded" sizes="72px" />
+              <Photo placeholder={e.placeholder} publicId={e.photoPublicId} url={e.photoUrl} alt="" className="h-13.5 w-18 flex-none rounded" sizes="72px" />
               <div className="flex min-w-0 flex-1 flex-col gap-1">
                 <div className="flex items-center gap-2">
-                  <span className={cx(typeTag({ type: e.type }), "px-[7px]! py-0.5! text-[11px]! tracking-[.12em]!")}>{TYPE_LABELS[e.type]}</span>
+                  <span className={cx(typeTag({ type: e.type }), "px-1.75! py-0.5! text-[11px]! tracking-[.12em]!")}>{TYPE_LABELS[e.type]}</span>
                   <span className="truncate text-sm font-semibold">{e.title}</span>
                 </div>
                 <span className="text-[12.5px] text-panel-muted">
                   Publicación {dayMonth(e.publishedAt)} · Vence {dayMonth(e.expiresAt)}
                 </span>
               </div>
-              <span className={cx("flex-none rounded border px-2 py-[3px] font-mono text-[10px] whitespace-nowrap uppercase", st.cls)}>{st.label}</span>
+              <span className={cx("flex-none rounded border px-2 py-0.75 font-mono text-[10px] whitespace-nowrap uppercase", st.cls)}>{st.label}</span>
             </button>
           );
         })}
         <span className="pt-1 text-[12.5px] text-panel-muted">Las publicaciones vencidas dejan de mostrarse en el sitio automáticamente.</span>
       </div>
 
-      <Card className="flex max-w-[560px] flex-[1_1_380px] flex-col gap-3.5 p-[18px] md:sticky md:top-5">
+      <Card className="flex max-w-140 flex-[1_1_380px] flex-col gap-3.5 p-4.5 md:sticky md:top-5">
         <span className="font-mono text-[10.5px] text-panel-muted uppercase">{sel ? "Editar publicación" : "Nueva publicación"}</span>
         <PhotoUpload
           value={{ photoPublicId: draft.photoPublicId ?? null, photoUrl: draft.photoUrl ?? null, photoCutout: false }}
@@ -120,7 +120,7 @@ export function EventsEditor({ events, cats, today, instagram, startNew }: { eve
           folder="eventos"
           onChange={(v) => set({ photoPublicId: v.photoPublicId, photoUrl: v.photoUrl })}
           hint="Horizontal (16:10). Se recorta automáticamente."
-          previewClass="h-[75px] w-[120px]"
+          previewClass="h-18.75 w-30"
           ratio={[16, 10]}
         />
         <div className="flex flex-col gap-1.5">

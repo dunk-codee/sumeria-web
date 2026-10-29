@@ -36,7 +36,7 @@ export function ProductsTable({ cats, prods, initialAvail }: { cats: Category[];
       await run(toggleProductAvailable(p.id, !p.available), p.available ? `${p.name} pausado para hoy.` : `${p.name} vuelve a estar disponible.`);
     });
 
-  const grid = "grid min-w-[860px] grid-cols-[56px_minmax(200px,2fr)_120px_90px_100px_80px_120px_60px] gap-3.5 px-[18px]";
+  const grid = "grid min-w-215 grid-cols-[56px_minmax(200px,2fr)_120px_90px_100px_80px_120px_60px] gap-3.5 px-4.5";
 
   return (
     <>
@@ -46,13 +46,13 @@ export function ProductsTable({ cats, prods, initialAvail }: { cats: Category[];
           onChange={(e) => setQ(e.target.value)}
           placeholder="Buscar por nombre o ingrediente"
           aria-label="Buscar productos"
-          className={cx(inputCls, "h-[38px] w-auto flex-[0_1_320px]")}
+          className={cx(inputCls, "h-9.5 w-auto flex-[0_1_320px]")}
         />
         <select
           value={cat}
           onChange={(e) => setCat(e.target.value === "todas" ? "todas" : Number(e.target.value))}
           aria-label="Filtrar por categoría"
-          className={cx(inputCls, "h-[38px] w-auto px-2.5")}
+          className={cx(inputCls, "h-9.5 w-auto px-2.5")}
         >
           <option value="todas">Todas las categorías</option>
           {cats.map((c) => (
@@ -74,7 +74,7 @@ export function ProductsTable({ cats, prods, initialAvail }: { cats: Category[];
               type="button"
               aria-pressed={avail === id}
               onClick={() => setAvail(id)}
-              className={cx("flex h-[34px] items-center rounded-full border px-3 text-[13px]", avail === id ? "border-panel-text text-panel-text" : "border-bone/18 text-panel-muted")}
+              className={cx("flex h-8.5 items-center rounded-full border px-3 text-[13px]", avail === id ? "border-panel-text text-panel-text" : "border-bone/18 text-panel-muted")}
             >
               {label}
             </button>
