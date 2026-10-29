@@ -21,6 +21,7 @@ export function Photo({
   imgClassName,
   children,
   ratio = [4, 3],
+  bare = false,
 }: {
   placeholder: string;
   publicId?: string | null;
@@ -33,6 +34,8 @@ export function Photo({
   imgClassName?: string;
   children?: React.ReactNode;
   ratio?: [number, number];
+  /** Sin fondo placeholder: deja ver el fondo del contenedor (la pizarra de la tarjeta). */
+  bare?: boolean;
 }) {
   const imgCls = cx(
     "absolute inset-0 h-full w-full",
@@ -44,7 +47,7 @@ export function Photo({
   return (
     <div
       className={cx("relative overflow-hidden", className)}
-      style={{ backgroundImage: placeholderBg(placeholder), filter: off ? "grayscale(1) brightness(.55)" : undefined }}
+      style={{ backgroundImage: bare ? undefined : placeholderBg(placeholder), filter: off ? "grayscale(1) brightness(.55)" : undefined }}
     >
       {publicId && CLOUD ? (
         <CloudImage publicId={publicId} alt={alt} width={w} height={h} cutout={cutout} sizes={sizes} className={imgCls} />

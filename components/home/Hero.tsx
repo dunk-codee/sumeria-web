@@ -214,7 +214,7 @@ export function Hero({ salonFrom, address }: { salonFrom: string; address: strin
   });
 
   return (
-    <section className="relative -mt-14 flex min-h-[min(92vh,860px)] items-end overflow-hidden bg-black">
+    <section className="relative -mt-14 flex min-h-svh items-end overflow-hidden bg-black">
       <HeroVideo />
       <motion.div
         aria-hidden

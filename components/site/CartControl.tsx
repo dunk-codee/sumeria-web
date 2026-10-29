@@ -55,9 +55,9 @@ export function CartControl({ id, name }: { id: number; name: string }) {
         <span
           className={cx(
             SEAL,
-            "-rotate-6 border-[1.5px] border-dashed border-sumeria text-sumeria transition-[rotate,background-color,color,border-color] duration-200",
-            "group-hover:rotate-0 group-hover:border-solid group-hover:border-sumeria-dark group-hover:bg-sumeria-dark group-hover:text-white",
-            "group-active:rotate-0 group-active:border-solid group-active:border-sumeria-dark group-active:bg-sumeria-dark group-active:text-white",
+            "border-[1.5px] border-dashed border-sumeria text-sumeria transition-[background-color,color,border-color] duration-200",
+            "group-hover:border-solid group-hover:border-sumeria-dark group-hover:bg-sumeria-dark group-hover:text-white",
+            "group-active:border-solid group-active:border-sumeria-dark group-active:bg-sumeria-dark group-active:text-white",
           )}
         >
           +
@@ -79,7 +79,7 @@ export function CartControl({ id, name }: { id: number; name: string }) {
               key={ink}
               aria-hidden
               className="pointer-events-none absolute inset-0 rounded-xs border-2 border-sumeria"
-              initial={{ scale: 1, opacity: 0.7, rotate: -6 }}
+              initial={{ scale: 1, opacity: 0.7, rotate: 0 }}
               animate={{ scale: 2.4, opacity: 0, rotate: 8 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.55, ease: [0.2, 0, 0, 1] }}
@@ -90,7 +90,7 @@ export function CartControl({ id, name }: { id: number; name: string }) {
         <AnimatePresence initial={ink > 0} mode="popLayout">
           <motion.span
             key={qty}
-            className={cx(SEAL, "-rotate-6 bg-sumeria-dark text-white ring-1 ring-white/35 ring-inset")}
+            className={cx(SEAL, "bg-sumeria-dark text-white ring-1 ring-white/35 ring-inset")}
             initial={reduce ? false : { scale: 1.8, rotate: -16, opacity: 0 }}
             animate={{ scale: 1, rotate: 0, opacity: 1 }}
             exit={{ opacity: 0, transition: { duration: 0.1 } }}
