@@ -1,22 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { button, Eyebrow, PageTitle, SampleNote } from "@/components/ui";
+import { InstagramIcon, WhatsAppIcon } from "@/components/icons";
+import { button, Eyebrow, PageTitle } from "@/components/ui";
 import { getSettings } from "@/lib/data";
-import { money } from "@/lib/format";
-import { hoursOf } from "@/lib/hours";
+import { WEEK_HOURS } from "@/lib/hours";
 import { waDisplay, waLink } from "@/lib/whatsapp";
 
 export const metadata: Metadata = {
   title: "Nosotros",
-  description: "Dirección, horarios, zonas de delivery y contacto de Sumeria Sushi en Concepción del Uruguay.",
+  description: "Dirección, horarios y contacto de Sumeria Sushi en Concepción del Uruguay.",
 };
 
 const cellLabel = "font-display text-[13px] tracking-[.24em] text-stone-3 uppercase";
 
 export default async function NosotrosPage() {
   const s = await getSettings();
-  const salon = hoursOf(s, "salon");
-  const pedidos = hoursOf(s, "pedidos");
   const mapsQ = encodeURIComponent(`${s.address}, ${s.city}`);
 
   return (
@@ -58,37 +56,38 @@ export default async function NosotrosPage() {
           </div>
           <div className="flex flex-col gap-3.5 bg-ink p-6">
             <span className={cellLabel}>Horarios</span>
-            <div className="flex flex-col gap-1">
-              <span className="font-display text-[22px] font-semibold uppercase">Salón</span>
-              <span className="text-[15px] text-sand">Todos los días desde las {salon.from}</span>
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="font-display text-[22px] font-semibold uppercase">Pedidos</span>
-              <span className="text-[15px] text-sand">
-                Delivery y take away de {pedidos.from} a {pedidos.to}
-              </span>
-            </div>
-          </div>
-          <div className="flex flex-col gap-3 bg-ink p-6">
-            <span className={cellLabel}>Zonas de delivery</span>
-            {s.zones.map((z) => (
-              <div key={z.id} className="flex justify-between gap-3 border-b border-bone/10 pb-2.5">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[15px] font-semibold">{z.name}</span>
-                  <span className="text-[13px] text-stone-3">{z.description}</span>
+            <dl className="m-0 flex flex-col">
+              {WEEK_HOURS.map((h) => (
+                <div key={h.days} className="flex flex-col gap-0.5 border-b border-bone/10 py-2.5 first:pt-0 last:border-0">
+                  <dt className="font-display text-[20px] font-semibold uppercase">{h.days}</dt>
+                  <dd className="m-0 text-[15px] text-sand">
+                    De {h.from} a {h.to}
+                  </dd>
                 </div>
-                <span className="font-display text-lg font-semibold text-sumeria">{money(z.price)}</span>
-              </div>
-            ))}
-            {s.zones.length === 0 && <SampleNote>Consultá el costo de envío por WhatsApp</SampleNote>}
+              ))}
+            </dl>
           </div>
           <div className="flex flex-col gap-3 bg-ink p-6">
             <span className={cellLabel}>Escribinos</span>
-            <a href={waLink(s.whatsapp)} target="_blank" rel="noopener noreferrer" className={button({ variant: "primary", size: "lg" })}>
-              WhatsApp {waDisplay(s.whatsapp)}
+            <a
+              href={waLink(s.whatsapp)}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`WhatsApp ${waDisplay(s.whatsapp)}`}
+              className={button({ variant: "primary", size: "lg" })}
+            >
+              <WhatsAppIcon size={20} />
+              {waDisplay(s.whatsapp)}
             </a>
-            <a href={`https://instagram.com/${s.instagram}`} target="_blank" rel="noopener noreferrer" className={button({ variant: "outline", size: "lg" })}>
-              Instagram @{s.instagram}
+            <a
+              href={`https://instagram.com/${s.instagram}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Instagram @${s.instagram}`}
+              className={button({ variant: "outline", size: "lg" })}
+            >
+              <InstagramIcon size={20} />
+              @{s.instagram}
             </a>
             <Link href="/reservas" className={button({ variant: "text", size: "md" })}>
               Reservar mesa →

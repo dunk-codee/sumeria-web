@@ -9,6 +9,7 @@ import { cx } from "@/lib/format";
 import { waLink } from "@/lib/whatsapp";
 import { LOGO_X } from "../XMark";
 import { EASE_STROKE, NavX } from "./NavX";
+import { NAV } from "./nav";
 import { useSite } from "./SiteProvider";
 
 const EASE_WIPE = [0.7, 0, 0.3, 1] as const;
@@ -144,14 +145,6 @@ function MenuIcon({ open }: { open: boolean }) {
 }
 
 const EASE_OUT = [0.2, 0.7, 0.2, 1] as const;
-
-export const NAV = [
-  { href: "/", label: "Inicio" },
-  { href: "/carta", label: "Carta" },
-  { href: "/novedades", label: "Novedades" },
-  { href: "/reservas", label: "Reservas" },
-  { href: "/nosotros", label: "Nosotros" },
-] as const;
 
 const isActive = (path: string, href: string) => (href === "/" ? path === "/" : path.startsWith(href));
 

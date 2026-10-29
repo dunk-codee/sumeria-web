@@ -262,7 +262,7 @@ pará `npm run dev` antes de correr `db:seed` o `next build`. Para hacer el buil
   y abajo aparece "Faltan datos". **Teclado en mobile** (`useKeyboard`, con `visualViewport`): en iOS el panel sube su borde
   de abajo lo que tapa el teclado; con el teclado abierto se oculta el bloque del total para que no tape el campo, y el campo
   con foco se centra. **Sin zonas de delivery** (pedido del cliente): no hay selector ni costo de envío;
-  el mensaje lleva solo el total de los productos. Las zonas siguen en la base, en el panel y en *Nosotros*.
+  el mensaje lleva solo el total de los productos. Las zonas siguen en la base y en el panel, pero el sitio ya no las muestra.
 - **Fotos**: `Photo.tsx` pinta siempre el fondo placeholder cálido y encima la foto (`CldImage` si hay `public_id`, si no `next/image`).
   `photo_cutout = true` → la foto (PNG/WebP sin fondo) se muestra entera, sin recortar.
 - **Modo sin base** (producción sin `DATABASE_URL`, que es como está hoy en Vercel): `dbConfigured()` en `lib/db.ts` da `false` y
@@ -289,6 +289,15 @@ pará `npm run dev` antes de correr `db:seed` o `next build`. Para hacer el buil
   (`motion-reduce:opacity-100!`). En **mobile** se nota que la tira scrollea: tarjetas al 72 % (asoma la siguiente), encastre
   (`snap-x`) y borde derecho desvanecido hasta llegar al final (`data-end`). (Se probó un amague de las tarjetas hacia la
   izquierda y se sacó.)
+- **Nosotros** (`app/(site)/nosotros/page.tsx`): Dónde (mapa), Horarios y Escribinos (botones con ícono + solo el número de
+  WhatsApp (`waDisplay`: `+54 9 3442 53-5419`, también en *Reservas*) / solo el @usuario de Instagram; el `aria-label` dice la red). **Sin zonas de delivery**. Horarios por día desde `WEEK_HOURS` (`lib/hours.ts`, pedido del cliente): lunes a jueves
+  19:30–23:00, viernes y sábados 19:30–23:30, domingos 20:00–23:00. **Están en el código, no en el panel**: `settings.hours`
+  solo guarda un desde/hasta por tipo, sin días (el hero, el footer y el menú mobile siguen leyendo `salon.from` de ahí).
+- **Footer** (en `app/(site)/layout.tsx`): logo + dirección y horario; columnas **Secciones** (las de la nav, de `NAV` en
+  `components/site/nav.ts`, compartido con el header: un archivo `"use client"` no puede pasarle constantes al servidor) y
+  **Contacto** (WhatsApp e Instagram con íconos de trazo de `components/icons.tsx`). Abajo: "© Sumeria Sushi 2026 · Diseñada por
+  DunkCode"; solo "DunkCode" lleva el link a `https://dunkcode.dev`. El año está fijo (lanzamiento): con Cache Components, `new Date()` en el layout
+  lo volvería dinámico. Todos los links con alto mínimo de 44 px.
 - **Header** (`components/site/SiteHeader.tsx`, cliente, vive en el layout así que no se remonta al navegar):
   - Botón del pedido (`CartButton`): **sello hanko**. "Pedido" en texto limpio (sin caja) + la cantidad dentro de un cuadradito
     `sumeria-dark`, inclinado −6°, con filete interior blanco (`ring-inset`) como los sellos japoneses; al pasar el mouse se endereza.

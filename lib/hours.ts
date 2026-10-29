@@ -9,3 +9,13 @@ const FALLBACK: Record<HoursRow["key"], HoursRow> = {
 export function hoursOf(s: { hours: HoursRow[] }, key: HoursRow["key"]): HoursRow {
   return s.hours.find((h) => h.key === key) ?? FALLBACK[key];
 }
+
+/**
+ * Horarios por día que muestra *Nosotros* (pedido del cliente). Fijos en el código: el panel solo guarda un horario
+ * desde/hasta por tipo (`settings.hours`), sin distinguir días.
+ */
+export const WEEK_HOURS = [
+  { days: "Lunes a jueves", from: "19:30", to: "23:00" },
+  { days: "Viernes y sábados", from: "19:30", to: "23:30" },
+  { days: "Domingos", from: "20:00", to: "23:00" },
+] as const;
