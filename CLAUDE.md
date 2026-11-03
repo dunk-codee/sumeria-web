@@ -295,11 +295,8 @@ pará `npm run dev` antes de correr `db:seed` o `next build`. Para hacer el buil
   texto en mayúsculas + sello con flecha (rojo relleno en "Ver la carta", punteado en "Reservar mesa"); al pasar el mouse el
   sello se endereza, la flecha avanza y se dibuja un subrayado rojo. (Historial: antes eran píldoras con `button()`; el cliente
   las encontró genéricas.)
-- **"¿Qué pedimos hoy?"** (inicio, `FeaturedReveal` en `components/home/FeaturedReveal.tsx`): al entrar en pantalla sube el
-  encabezado (`data-reveal`) y después las tarjetas (`data-rail-item`), escalonadas; arrancan con `opacity-0` en el HTML
-  (`motion-reduce:opacity-100!`). En **mobile** se nota que la tira scrollea: tarjetas al 72 % (asoma la siguiente), encastre
-  (`snap-x`) y borde derecho desvanecido hasta llegar al final (`data-end`). (Se probó un amague de las tarjetas hacia la
-  izquierda y se sacó.)
+- **"¿Qué pedimos hoy?"** (inicio, `FeaturedReveal` en `components/home/FeaturedReveal.tsx`): **sin animación de aparición** (pedido del cliente). El componente solo
+  desvanece el borde derecho de la tira (`data-end`). En **mobile** se nota que la tira scrollea: tarjetas al 72 % (asoma la siguiente) y encastre (`snap-x`).
 - **Nosotros** (`app/(site)/nosotros/page.tsx`): Dónde (mapa), Horarios y Escribinos (botones con ícono + solo el número de
   WhatsApp (`waDisplay`: `+54 9 3442 53-5419`, también en *Reservas*) / solo el @usuario de Instagram; el `aria-label` dice la red). **Sin zonas de delivery**.
 - **Horarios por día** (`settings.hours`, jsonb de 7 `DayHours`: `day` 0=domingo, `closed`, `from` abre, `to` cierra, `ordersFrom` pedidos desde): se editan en
