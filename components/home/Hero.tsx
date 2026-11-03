@@ -173,7 +173,7 @@ let played = false;
 
 const subscribeNoop = () => () => {};
 
-export function Hero({ salonFrom, address }: { salonFrom: string; address: string }) {
+export function Hero({ openText, address }: { openText: string; address: string }) {
   const reduce = useReducedMotion();
   // Durante la hidratación se respeta el HTML del servidor (estado inicial);
   // en navegaciones del cliente se arranca en el estado final si ya corrió o si se pide menos movimiento.
@@ -300,7 +300,7 @@ export function Hero({ salonFrom, address }: { salonFrom: string; address: strin
           animate={{ opacity: 1 }}
           transition={at(AFTER_WORDS + 0.3, 0.8, "easeOut")}
         >
-          <span>Todos los días desde las {salonFrom}</span>
+          <span>{openText}</span>
           <span aria-hidden className="text-silver">
             ·
           </span>

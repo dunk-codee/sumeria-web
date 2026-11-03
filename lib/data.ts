@@ -13,8 +13,9 @@ import {
   products,
   settings,
   tables,
-  type HoursRow,
+  type DayHours,
 } from "./schema";
+import { weekOf } from "./hours";
 
 /**
  * Lecturas públicas cacheadas. Cada una lleva un tag que el panel expira
@@ -74,7 +75,7 @@ export type SiteSettings = {
   address: string;
   city: string;
   instagram: string;
-  hours: HoursRow[];
+  hours: DayHours[];
   zones: { id: number; name: string; description: string; price: number }[];
   /** Días reservables desde el sitio (rango y días bloqueados). */
   booking: BookingConfig;
@@ -95,7 +96,7 @@ export async function getSettings(): Promise<SiteSettings> {
     address: base.address,
     city: base.city,
     instagram: base.instagram,
-    hours: base.hours,
+    hours: weekOf(base.hours),
     zones: zones.map((z) => ({ id: z.id, name: z.name, description: z.description, price: z.price })),
     booking: row ? { from: row.bookingFrom, to: row.bookingTo, blocked: row.blockedDates } : DEFAULT_BOOKING,
   };

@@ -70,6 +70,34 @@ export function reservationConfirmMessage(r: {
   return `¡Hola ${first}! Te confirmamos la reserva en Sumeria para el ${DOW_LONG[p.dow]} ${p.day} a las ${r.time}, ${r.people} personas, ${mesa}. Te esperamos en ${r.address}. Si no podés venir, avisanos por acá.`;
 }
 
+/** Mensaje del cliente al local con la reserva que acaba de hacer en la web (ya confirmada en el panel). */
+export function reservationRequestMessage(r: {
+  name: string;
+  phone: string;
+  /** "Lunes 26 de octubre" */
+  dateLabel: string;
+  /** "20:00 a 23:00" */
+  timeRange: string;
+  people: number;
+  /** "Mesa 3" o "Mesas 1 y 2". */
+  tableLabel: string;
+  comment?: string;
+}): string {
+  const out = [
+    "¡Hola Sumeria! Acabo de reservar una mesa desde la web:",
+    "",
+    `• Nombre: ${r.name.trim()}`,
+    `• Teléfono: ${r.phone.trim()}`,
+    `• Día: ${r.dateLabel}`,
+    `• Horario: ${r.timeRange}`,
+    `• Personas: ${r.people}`,
+    `• Mesa: ${r.tableLabel}`,
+  ];
+  if (r.comment?.trim()) out.push(`• Comentario: ${r.comment.trim()}`);
+  out.push("", "¡Gracias, nos vemos!");
+  return out.join("\n");
+}
+
 /** Consulta de mesa para hoy cuando ya pasó el corte de reservas online. */
 export function sameDayConsultMessage(people: number, name?: string): string {
   const quien = name?.trim() ? ` Soy ${name.trim()}.` : "";

@@ -14,7 +14,6 @@ import { getDb, isUniqueViolation } from "@/lib/db";
 import { TABLE_BOX, TABLE_MAX, TABLE_MIN } from "@/lib/plan";
 import {
   categories,
-  deliveryZones,
   EVENT_TYPES,
   events,
   PLACEHOLDERS,
@@ -455,14 +454,10 @@ const settingsInput = z.object({
     .trim()
     .transform((v) => v.replace(/^@/, ""))
     .refine((v) => /^[A-Za-z0-9._]{1,30}$/.test(v), "Usuario de Instagram inválido"),
-  hours: z.array(z.object({ key: z.enum(["salon", "pedidos", "reservas"]), label: z.string().max(60), from: hhmm, to: hhmm })),
-  zones: z.array(
-    z.object({
-      name: z.string().trim().min(1, "Cada zona necesita un nombre").max(60),
-      description: z.string().trim().max(120),
-      price: z.number().int().min(0).max(1_000_000),
-    }),
-  ),
+  hours: z
+    .array(z.object({ day: z.number().int().min(0).max(6), closed: z.boolean(), from: hhmm, to: hhmm, ordersFrom: hhmm }))
+    .length(7, "Falta algún día de la semana.")
+    .refine((h) => new Set(h.map((d) => d.day)).size === 7, "Hay un día repetido en los horarios."),
 });
 export type SettingsInput = z.input<typeof settingsInput>;
 
@@ -470,13 +465,9 @@ export async function saveSettings(input: SettingsInput): Promise<ActionResult> 
   await requireAdmin();
   const p = settingsInput.safeParse(input);
   if (!p.success) return fail(p.error.issues[0]?.message ?? "Revisá los datos.");
-  const { zones, ...s } = p.data;
+  const s = p.data;
   const db = await getDb();
-  await db.transaction(async (tx) => {
-    await tx.insert(settings).values({ id: 1, ...s }).onConflictDoUpdate({ target: settings.id, set: s });
-    await tx.delete(deliveryZones);
-    if (zones.length) await tx.insert(deliveryZones).values(zones.map((z, i) => ({ ...z, position: i })));
-  });
+  await db.insert(settings).values({ id: 1, ...s }).onConflictDoUpdate({ target: settings.id, set: s });
   done(TAGS.settings);
   return ok();
 }

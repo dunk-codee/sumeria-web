@@ -8,14 +8,14 @@ import type { SeatingOption, SeatingTier } from "@/lib/combos";
 import { DOW, longDate, MON, parts, shortDate, todayISO } from "@/lib/dates";
 import { cx, plural, tablesLabel } from "@/lib/format";
 import { MAX_PEOPLE, SAME_DAY_CUTOFF, TURN } from "@/lib/turns";
-import { sameDayConsultMessage, waLink } from "@/lib/whatsapp";
+import { reservationRequestMessage, sameDayConsultMessage, waLink } from "@/lib/whatsapp";
 import { FloorPlan, type PlanGroup, type PlanTable } from "../FloorPlan";
 import { button } from "../ui";
 import { XLoader, XMark } from "../XMark";
 import { SITE_CHAIR, SITE_TABLE, SITE_TABLE_ARIA, type SiteTableKind } from "./tableStyles";
 
 type Status = "free" | "pend" | "res";
-type LastRes = { table: string; name: string; date: string; people: number };
+type LastRes = { table: string; name: string; date: string; people: number; waHref: string };
 type Availability = {
   date: string;
   tables: { n: number; capacity: number; status: Status }[];
@@ -252,13 +252,27 @@ export function Reservation({ plan, whatsapp, booking }: { plan: PlanData; whats
         setSendErr(data.error ?? "No pudimos enviar la reserva. Probá de nuevo.");
         return;
       }
-      setLast({ table: selLabel, name: name.trim(), date: longDate(date), people });
+      const waHref = waLink(
+        whatsapp,
+        reservationRequestMessage({
+          name,
+          phone,
+          dateLabel: longDate(date),
+          timeRange: TURN.range,
+          people,
+          tableLabel: selLabel,
+          comment,
+        }),
+      );
+      setLast({ table: selLabel, name: name.trim(), date: longDate(date), people, waHref });
       setStep(4);
       setSelection([]);
       setAnchor(null);
       setTried(false);
       setReload((r) => r + 1);
       window.scrollTo({ top: 0 });
+      // La reserva ya quedó confirmada: se lleva al cliente a WhatsApp con el mensaje listo para mandar.
+      window.location.assign(waHref);
     } catch {
       setSendErr("No pudimos enviar la reserva. Revisá tu conexión.");
     } finally {
@@ -646,7 +660,7 @@ export function Reservation({ plan, whatsapp, booking }: { plan: PlanData; whats
               <button type="submit" disabled={sending || cutoff} className={cx(button({ variant: cutoff ? "disabled" : "primary" }), "py-4.25")}>
                 {sending ? "Enviando…" : cutoff ? "Reservas de hoy cerradas" : "Enviar reserva"}
               </button>
-              <span className="text-[13px] leading-normal text-stone-3">La reserva queda pendiente hasta que te confirmemos por WhatsApp.</span>
+              <span className="text-[13px] leading-normal text-stone-3">Al enviar, la reserva queda confirmada y te llevamos a WhatsApp con el mensaje listo para mandarnos.</span>
             </form>
             <div className="flex flex-col gap-3.5 rounded-xs border border-bone/14 bg-coal p-5.5">
               <span className="font-mono text-[10.5px] text-stone-3 uppercase">Resumen</span>
@@ -674,14 +688,12 @@ export function Reservation({ plan, whatsapp, booking }: { plan: PlanData; whats
       {step === 4 && last && (
         <div className="flex max-w-155 flex-col gap-4.5" role="status">
           <XMark size={64} stroke={3.6} className="text-sumeria" />
-          <h2 className="m-0 font-display text-[clamp(40px,5vw,64px)] leading-[.95] font-semibold uppercase">Recibimos tu reserva.</h2>
-          <p className="m-0 text-xl leading-[1.4]">Te confirmamos por WhatsApp.</p>
+          <h2 className="m-0 font-display text-[clamp(40px,5vw,64px)] leading-[.95] font-semibold uppercase">Reserva confirmada.</h2>
+          <p className="m-0 text-xl leading-[1.4]">Tu mesa ya está guardada. Mandanos el mensaje por WhatsApp para avisarnos.</p>
           <div className="flex flex-col gap-3 rounded-xs border border-bone/14 bg-coal p-5">
             <div className="flex flex-wrap items-center justify-between gap-2.5">
               <span className="font-display text-[26px] font-semibold uppercase">{last.table}</span>
-              <span className="rounded-xs border-[1.5px] border-dashed border-kraft px-2.25 py-1 font-mono text-[10.5px] text-kraft uppercase">
-                Pendiente de confirmar
-              </span>
+              <span className="rounded-xs border-[1.5px] border-ok px-2.25 py-1 font-mono text-[10.5px] text-ok uppercase">✓ Confirmada</span>
             </div>
             <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-[15px]">
               <dt className="text-stone-3">A nombre de</dt>
@@ -694,11 +706,14 @@ export function Reservation({ plan, whatsapp, booking }: { plan: PlanData; whats
               <dd className="m-0">{last.people}</dd>
             </dl>
             <span className="text-[13.5px] leading-normal text-stone-3">
-              Guardamos la mesa para ese día mientras la confirmamos. Si necesitás cambiar algo, respondé el mensaje que te mandamos.
+              Si no se abrió WhatsApp, tocá el botón para mandarnos el mensaje. Si necesitás cambiar algo, escribinos por ahí.
             </span>
           </div>
           <div className="flex flex-wrap gap-2.5">
-            <Link href="/carta" className={button({ variant: "primary", size: "md" })}>
+            <a href={last.waHref} target="_blank" rel="noopener noreferrer" className={button({ variant: "primary", size: "md" })}>
+              Abrir WhatsApp
+            </a>
+            <Link href="/carta" className={button({ variant: "outline", size: "md" })}>
               Ver la carta
             </Link>
             <Link href="/" className={button({ variant: "outline", size: "md" })}>

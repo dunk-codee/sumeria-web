@@ -2,6 +2,7 @@ import { and, asc, eq, gte, inArray, lte, ne, sql } from "drizzle-orm";
 import { addDays, todayISO } from "./dates";
 import { getDb } from "./db";
 import { DEFAULT_SETTINGS } from "./defaults";
+import { weekOf } from "./hours";
 import { categories, deliveryZones, events, fixtures, products, reservations, settings, tables } from "./schema";
 
 /** Lecturas del panel: siempre frescas (sin caché). */
@@ -122,7 +123,8 @@ export async function adminSettings() {
   const zones = await db.select().from(deliveryZones).orderBy(asc(deliveryZones.position), asc(deliveryZones.id));
   const { zones: _z, ...defaults } = DEFAULT_SETTINGS;
   void _z;
-  return { ...(row ?? { id: 1, ...defaults, bookingFrom: null, bookingTo: null, blockedDates: [] as string[] }), zones };
+  const base = row ?? { id: 1, ...defaults, bookingFrom: null, bookingTo: null, blockedDates: [] as string[] };
+  return { ...base, hours: weekOf(base.hours), zones };
 }
 
 /** Mesas con reservas activas a futuro (para avisar antes de quitarlas del plano). */

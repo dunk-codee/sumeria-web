@@ -60,7 +60,8 @@ export const deliveryZones = pgTable("delivery_zones", {
   position: integer("position").notNull().default(0),
 });
 
-export type HoursRow = { key: "salon" | "pedidos" | "reservas"; label: string; from: string; to: string };
+/** Horario de un día (`day`: 0 = domingo … 6 = sábado). `ordersFrom`: desde qué hora se aceptan pedidos. */
+export type DayHours = { day: number; closed: boolean; from: string; to: string; ordersFrom: string };
 
 export const settings = pgTable("settings", {
   id: integer("id").primaryKey().default(1),
@@ -69,7 +70,7 @@ export const settings = pgTable("settings", {
   address: text("address").notNull(),
   city: text("city").notNull(),
   instagram: text("instagram").notNull(),
-  hours: jsonb("hours").$type<HoursRow[]>().notNull(),
+  hours: jsonb("hours").$type<DayHours[]>().notNull(),
   /** Primer día reservable desde el sitio (ISO). Sin valor: desde hoy. */
   bookingFrom: date("booking_from", { mode: "string" }),
   /** Último día reservable desde el sitio (ISO). Sin valor: hoy + 7 días. */

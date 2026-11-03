@@ -240,7 +240,9 @@ pará `npm run dev` antes de correr `db:seed` o `next build`. Para hacer el buil
   - **Días reservables**: `settings.booking_from/booking_to/blocked_dates` (panel → Calendario de reservas). Sin rango: hoy → hoy + 7.
     Regla pura en `lib/booking.ts` (`bookingStatus`). **Corte del mismo día a las 19:30** (`SAME_DAY_CUTOFF`): la web lo muestra con
     botón a WhatsApp y `POST /api/reservations` responde 422 `code: "cutoff"`.
-  - Las reservas web entran como `pend`; el local confirma desde el panel (abre `wa.me/549<tel>` con el mensaje y pasa a `conf`).
+  - **Las reservas web entran ya `conf`** (pedido del cliente: sin pendientes). Al enviar, la web redirige al cliente a `wa.me/<whatsapp del local>`
+    con el mensaje listo (`reservationRequestMessage` en `lib/whatsapp.ts`) y deja en pantalla la confirmación con botón "Abrir WhatsApp".
+    `pend` sigue existiendo en el panel para reservas viejas, pero la web ya no las crea.
   - Web: hasta 8 personas. El panel usa `/api/admin/availability` (sin las reglas del sitio).
 - **Carta** (`app/(site)/carta/page.tsx` + `CartaFilter` / `CartaSection` en `components/site/CategoryBar.tsx`): filtro sticky
   con **"Todas"** (todas las categorías seguidas) y una opción por categoría (muestra **solo** esa). Al tocar un filtro vuelve al

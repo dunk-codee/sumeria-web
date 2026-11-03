@@ -6,7 +6,7 @@ import { MobileMenu, SiteHeader } from "@/components/site/SiteHeader";
 import { NAV } from "@/components/site/nav";
 import { SiteProvider } from "@/components/site/SiteProvider";
 import { getMenu, getSettings } from "@/lib/data";
-import { hoursOf } from "@/lib/hours";
+import { openFromText } from "@/lib/hours";
 import { waLink } from "@/lib/whatsapp";
 
 const FOOT_LINK =
@@ -15,10 +15,10 @@ const FOOT_LINK =
 export default async function SiteLayout({ children }: LayoutProps<"/">) {
   const [menu, settings] = await Promise.all([getMenu(), getSettings()]);
   const products = menu.flatMap((c) => c.products.map((p) => ({ id: p.id, name: p.name, pieces: p.pieces, price: p.price, available: p.available })));
-  const salon = hoursOf(settings, "salon");
+  const openText = openFromText(settings.hours);
 
   return (
-    <SiteProvider products={products} whatsapp={settings.whatsapp} pickupAddress={settings.address}>
+    <SiteProvider products={products} whatsapp={settings.whatsapp} pickupAddress={settings.address} week={settings.hours}>
       <SiteHeader />
       <main>{children}</main>
       <footer className="border-t border-bone/12 px-gutter pt-10 pb-25">
@@ -28,7 +28,7 @@ export default async function SiteLayout({ children }: LayoutProps<"/">) {
             <span className="text-sm leading-relaxed text-stone-3">
               {settings.address} · {settings.city.split(",")[0]}
               <br />
-              Todos los días desde las {salon.from}
+              {openText}
             </span>
           </div>
           <div className="flex flex-wrap gap-x-16 gap-y-6">
@@ -61,7 +61,7 @@ export default async function SiteLayout({ children }: LayoutProps<"/">) {
         </div>
       </footer>
       <CartFab />
-      <MobileMenu whatsapp={settings.whatsapp} instagram={settings.instagram} address={settings.address} salonFrom={salon.from} />
+      <MobileMenu whatsapp={settings.whatsapp} instagram={settings.instagram} address={settings.address} openText={openText} />
       <CartDrawer />
     </SiteProvider>
   );

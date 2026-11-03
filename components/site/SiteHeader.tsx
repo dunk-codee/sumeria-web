@@ -212,7 +212,7 @@ export function SiteHeader() {
   );
 }
 
-export function MobileMenu({ whatsapp, instagram, address, salonFrom }: { whatsapp: string; instagram: string; address: string; salonFrom: string }) {
+export function MobileMenu({ whatsapp, instagram, address, openText }: { whatsapp: string; instagram: string; address: string; openText: string }) {
   const path = usePathname();
   const { menuOpen } = useSite();
   const reduce = useReducedMotion();
@@ -257,7 +257,7 @@ export function MobileMenu({ whatsapp, instagram, address, salonFrom }: { whatsa
           </nav>
           <motion.div {...fadeUp(0.4)} className="mt-auto flex flex-col gap-2.5">
             <span className="text-sm leading-relaxed text-stone-3">
-              {address} · Todos los días desde las {salonFrom}
+              {address} · {openText}
             </span>
             <a
               href={waLink(whatsapp)}
