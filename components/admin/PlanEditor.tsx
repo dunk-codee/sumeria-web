@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { savePlan } from "@/app/admin/actions";
 import type { PlanData } from "@/lib/data";
 import { cx } from "@/lib/format";
-import { PLAN_H, TABLE_BOX } from "@/lib/plan";
+import { PLAN_H, TABLE_BOX, TABLE_MAX, TABLE_MIN } from "@/lib/plan";
 import { FloorPlan, type PlanTable } from "../FloorPlan";
 import { AButton, Card, Field, inputCls, useRun } from "./ui";
 
@@ -33,7 +33,7 @@ export function PlanEditor({ initial, withUpcoming }: { initial: PlanData; withU
       ts.map((t) => {
         if (t.n !== n) return t;
         const nt = { ...t, ...patch };
-        return { ...nt, ...TABLE_BOX, x: Math.min(nt.x, 100 - TABLE_BOX.w), y: Math.min(nt.y, PLAN_H - TABLE_BOX.h) };
+        return { ...nt, x: Math.min(nt.x, 100 - nt.w), y: Math.min(nt.y, PLAN_H - nt.h) };
       }),
     );
   };
@@ -57,7 +57,7 @@ export function PlanEditor({ initial, withUpcoming }: { initial: PlanData; withU
     drag.current = null;
   };
 
-  // Todas las mesas son cuadradas y del mismo tamaño; una nueva arranca para 4.
+  // Una mesa nueva arranca cuadrada, para 4.
   const add = () => {
     const n = Math.max(0, ...tables.map((t) => t.n)) + 1;
     setTables((ts) => [...ts, { n, capacity: 4, shape: "square", x: 26, y: 46, location: "Salón", ...TABLE_BOX }]);
@@ -102,7 +102,7 @@ export function PlanEditor({ initial, withUpcoming }: { initial: PlanData; withU
   const save = () =>
     start(async () => {
       const r = await run(
-        savePlan(tables.map(({ n, capacity, shape, x, y, location }) => ({ n, capacity, shape, x, y, location }))),
+        savePlan(tables.map(({ n, capacity, shape, x, y, w, h, location }) => ({ n, capacity, shape, x, y, w, h, location }))),
         "Plano guardado. Las reservas del sitio ya usan esta distribución.",
       );
       if (r?.ok) setDirty(false);
@@ -134,7 +134,7 @@ export function PlanEditor({ initial, withUpcoming }: { initial: PlanData; withU
       <div className="flex flex-wrap items-start gap-5 px-5 pt-5 pb-12 md:px-8">
         <div className="flex min-w-0 flex-[1_1_620px] flex-col gap-2.5">
           <span className="text-[13px] text-panel-muted">
-            Arrastrá las mesas para ubicarlas (o seleccionala y usá las flechas). Tocá una para cambiar su capacidad o forma. Cocina, barra y baños son fijos.
+            Arrastrá las mesas para ubicarlas (o seleccionala y usá las flechas). Tocá una para cambiar su capacidad, forma o tamaño. Cocina, barra y baños son fijos.
           </span>
           <FloorPlan
             fixtures={initial.fixtures}
@@ -200,6 +200,54 @@ export function PlanEditor({ initial, withUpcoming }: { initial: PlanData; withU
                     </button>
                   </div>
                 </div>
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[13px] font-semibold text-sand">Forma</span>
+                  <div className="grid grid-cols-2 gap-1 rounded border border-bone/20 p-1">
+                    {(["square", "round"] as const).map((sh) => (
+                      <button
+                        key={sh}
+                        type="button"
+                        aria-pressed={es.shape === sh}
+                        onClick={() => upd(es.n, sh === "round" ? { shape: sh, w: es.w, h: es.w } : { shape: sh })}
+                        className={cx(
+                          "h-10 rounded-xs text-[13px]",
+                          es.shape === sh ? "border border-sumeria bg-sumeria/20 font-semibold" : "border border-transparent text-panel-muted",
+                        )}
+                      >
+                        {sh === "square" ? "Cuadrada / rectangular" : "Redonda"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {(
+                  [
+                    ["w", "Ancho"],
+                    ["h", "Alto"],
+                  ] as const
+                ).map(([k, label]) => (
+                  <label key={k} className="flex flex-col gap-1.5">
+                    <span className="flex justify-between text-[13px] font-semibold text-sand">
+                      {label}
+                      <span className="font-mono text-panel-muted">{es[k]}</span>
+                    </span>
+                    <input
+                      type="range"
+                      min={TABLE_MIN}
+                      max={TABLE_MAX}
+                      step={1}
+                      value={es[k]}
+                      onChange={(e) => upd(es.n, { [k]: Number(e.target.value) })}
+                      className="h-11 accent-sumeria"
+                    />
+                  </label>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => upd(es.n, { ...TABLE_BOX })}
+                  className="self-start text-xs text-panel-muted underline"
+                >
+                  Restablecer tamaño
+                </button>
                 <Field label="Ubicación (se muestra al reservar)">
                   <input value={es.location} onChange={(e) => upd(es.n, { location: e.target.value })} maxLength={60} className={inputCls} />
                 </Field>

@@ -36,8 +36,8 @@ export default async function HomePage() {
 
       {/* Lo que se viene */}
       {feat && (
-        <section className="px-gutter pt-section">
-          <div className="mx-auto flex max-w-7xl flex-col gap-[clamp(24px,3vw,36px)]">
+        <section className="bg-coal py-section">
+          <div className="mx-auto flex max-w-7xl flex-col gap-[clamp(24px,3vw,36px)] px-gutter">
             <Eyebrow>Lo que se viene</Eyebrow>
             <article className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,380px),1fr))] border border-bone/10 bg-coal">
               <Photo placeholder={feat.placeholder} publicId={feat.photoPublicId} url={feat.photoUrl} alt={feat.title} className="min-h-75" sizes="(max-width: 900px) 100vw, 640px" ratio={[16, 10]}>
@@ -216,7 +216,7 @@ export default async function HomePage() {
       </section>
 
       {/* Ustedes: reseñas de Google Maps */}
-      <section className="py-section">
+      <section className="bg-coal py-section">
         <div className="mx-auto flex max-w-7xl flex-col gap-[clamp(24px,3vw,36px)]">
           <div className="flex flex-wrap items-end justify-between gap-4 px-gutter">
             <div className="flex flex-col gap-2.5">
