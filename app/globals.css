@@ -1,6 +1,16 @@
 @import "tailwindcss";
 @config "../tailwind.config.ts";
 
+/* Carrusel infinito: el track lleva el contenido duplicado y se desplaza media vuelta. */
+@theme {
+  --animate-marquee: marquee 70s linear infinite;
+  @keyframes marquee {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+}
+
 /* Márgenes y espaciados fluidos del prototipo (clamp sobre el ancho de la vista). */
 @utility px-gutter {
   padding-inline: clamp(20px, 5vw, 72px);
