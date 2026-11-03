@@ -1,6 +1,9 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { nowTime, todayISO } from "@/lib/dates";
+import { ordersBlockMessage, ordersStatus } from "@/lib/hours";
+import type { DayHours } from "@/lib/schema";
 import { orderMessage, waLink, type OrderLine } from "@/lib/whatsapp";
 
 export type CartProduct = { id: number; name: string; pieces: string | null; price: number; available: boolean };
@@ -25,6 +28,8 @@ type Ctx = Persisted & {
   products: Record<number, CartProduct>;
   whatsapp: string;
   pickupAddress: string;
+  /** Mensaje de por qué todavía no se pueden enviar pedidos (null: se puede, o aún no se sabe la hora). */
+  ordersBlock: string | null;
   lines: (OrderLine & { id: number })[];
   count: number;
   subtotal: number;
@@ -53,11 +58,14 @@ export function SiteProvider({
   products,
   whatsapp,
   pickupAddress,
+  week,
   children,
 }: {
   products: CartProduct[];
   whatsapp: string;
   pickupAddress: string;
+  /** Horario de la semana (de acá sale desde qué hora se aceptan pedidos cada día). */
+  week: DayHours[];
   children: ReactNode;
 }) {
   const byId = useMemo(() => Object.fromEntries(products.map((p) => [p.id, p])) as Record<number, CartProduct>, [products]);
@@ -129,6 +137,15 @@ export function SiteProvider({
     pickupAddress,
   });
 
+  // Si ya se aceptan pedidos: la hora de Argentina se mira en el navegador (la página está en caché) y se renueva cada 30 s.
+  const [ordersBlock, setOrdersBlock] = useState<string | null>(null);
+  useEffect(() => {
+    const tick = () => setOrdersBlock(ordersBlockMessage(ordersStatus(week, todayISO(), nowTime())));
+    tick();
+    const id = setInterval(tick, 30_000);
+    return () => clearInterval(id);
+  }, [week]);
+
   // Bloquea el scroll del fondo con el carrito o el menú abiertos.
   useEffect(() => {
     const lock = cartOpen || menuOpen;
@@ -144,6 +161,7 @@ export function SiteProvider({
     products: byId,
     whatsapp,
     pickupAddress,
+    ordersBlock,
     lines,
     count,
     subtotal,

@@ -137,6 +137,8 @@ export function CartDrawer() {
   const sendErr = tried && (missName || missAddr);
 
   const send = () => {
+    // Antes del horario de pedidos no se envía nada (hora de Argentina, se mira al tocar).
+    if (s.ordersBlock) return;
     // Falta un dato obligatorio: se lleva la vista al primer campo vacío (con su mensaje) y se le da foco.
     const first = missName ? nameRef.current : missAddr ? addrRef.current : null;
     if (first) {
@@ -371,7 +373,18 @@ export function CartDrawer() {
                   Faltan datos: revisá los campos marcados.
                 </span>
               )}
-              <button type="button" onClick={send} className={cx(button({ variant: "primary", size: "lg" }), "py-4.25")}>
+              {s.ordersBlock && (
+                <span id="orders-block" className="text-[13px] text-sumeria-light" role="status">
+                  {s.ordersBlock}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={send}
+                disabled={!!s.ordersBlock}
+                aria-describedby={s.ordersBlock ? "orders-block" : undefined}
+                className={cx(button({ variant: "primary", size: "lg" }), "py-4.25", "disabled:cursor-not-allowed disabled:opacity-40")}
+              >
                 Enviar pedido por WhatsApp
               </button>
               <span className="text-center text-xs text-stone-3">Se abre WhatsApp con el mensaje listo. Te confirmamos el pedido por ahí.</span>

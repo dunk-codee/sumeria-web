@@ -3,7 +3,7 @@ import { CartaFilter, CartaSection } from "@/components/site/CategoryBar";
 import { CartaIntro } from "@/components/site/CartaIntro";
 import { ProductCard } from "@/components/site/ProductCard";
 import { getMenu, getSettings } from "@/lib/data";
-import { hoursOf } from "@/lib/hours";
+import { ordersFromText } from "@/lib/hours";
 
 export const metadata: Metadata = {
   title: "Carta",
@@ -12,12 +12,11 @@ export const metadata: Metadata = {
 
 export default async function CartaPage() {
   const [menu, settings] = await Promise.all([getMenu(), getSettings()]);
-  const pedidos = hoursOf(settings, "pedidos");
   const sections = menu.filter((c) => c.products.length > 0);
 
   return (
     <>
-      <CartaIntro pedidosFrom={pedidos.from} />
+      <CartaIntro ordersText={ordersFromText(settings.hours)} />
       <CartaFilter cats={sections.map((c) => ({ slug: c.slug, name: c.name }))}>
         <div className="mx-auto max-w-7xl px-gutter pb-35">
           {sections.map((s) => (

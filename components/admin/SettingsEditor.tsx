@@ -3,15 +3,14 @@
 import { useState, useTransition } from "react";
 import { saveSettings, type SettingsInput } from "@/app/admin/actions";
 import { cx } from "@/lib/format";
-import type { HoursRow } from "@/lib/schema";
-import { AButton, Card, Field, inputCls, useRun } from "./ui";
-
-type Zone = { name: string; description: string; price: string };
+import { DAY_NAMES, WEEK_ORDER } from "@/lib/hours";
+import type { DayHours } from "@/lib/schema";
+import { AButton, Card, Field, inputCls, Switch, useRun } from "./ui";
 
 export function SettingsEditor({
   initial,
 }: {
-  initial: { address: string; city: string; whatsapp: string; instagram: string; hours: HoursRow[]; zones: { name: string; description: string; price: number }[] };
+  initial: { address: string; city: string; whatsapp: string; instagram: string; hours: DayHours[] };
 }) {
   const run = useRun();
   const [saving, start] = useTransition();
@@ -21,16 +20,13 @@ export function SettingsEditor({
     whatsapp: "+" + initial.whatsapp,
     instagram: "@" + initial.instagram,
   });
-  const [hours, setHours] = useState<HoursRow[]>(initial.hours);
-  const [zones, setZones] = useState<Zone[]>(initial.zones.map((z) => ({ ...z, price: String(z.price) })));
+  const [hours, setHours] = useState<DayHours[]>(initial.hours);
 
   const save = () =>
     start(async () => {
-      const input: SettingsInput = { ...s, hours, zones: zones.map((z) => ({ ...z, price: Number(z.price) || 0 })) };
+      const input: SettingsInput = { ...s, hours };
       await run(saveSettings(input), "Datos guardados. Ya se ven en el sitio.");
     });
-
-  const updZone = (i: number, p: Partial<Zone>) => setZones((zs) => zs.map((z, j) => (j === i ? { ...z, ...p } : z)));
 
   return (
     <>
@@ -59,63 +55,44 @@ export function SettingsEditor({
             <input value={s.instagram} onChange={(e) => setS({ ...s, instagram: e.target.value })} className={inputCls} />
           </Field>
         </Card>
-        <Card className="flex flex-col gap-3 p-4.5">
-          <h2 className="m-0 text-[15px] font-bold">Horarios</h2>
-          <div className="grid grid-cols-[1fr_88px_88px] gap-2 font-mono text-[10.5px] text-panel-muted uppercase">
+        <Card className="flex flex-col gap-3 p-4.5 md:col-span-2">
+          <h2 className="m-0 text-[15px] font-bold">Horarios por día</h2>
+          <div className="hidden grid-cols-[110px_72px_1fr_1fr_1fr] gap-2 font-mono text-[10.5px] text-panel-muted uppercase sm:grid">
             <span />
-            <span className="text-center">Desde</span>
-            <span className="text-center">Hasta</span>
+            <span>Abierto</span>
+            <span className="text-center">Abre</span>
+            <span className="text-center">Cierra</span>
+            <span className="text-center">Pedidos desde</span>
           </div>
-          {hours.map((h, i) => (
-            <div key={h.key} className="grid grid-cols-[1fr_88px_88px] items-center gap-2">
-              <span className="text-sm">{h.label}</span>
-              {(["from", "to"] as const).map((k) => (
-                <input
-                  key={k}
-                  value={h[k]}
-                  aria-label={`${h.label} ${k === "from" ? "desde" : "hasta"}`}
-                  onChange={(e) => setHours((hs) => hs.map((x, j) => (j === i ? { ...x, [k]: e.target.value } : x)))}
-                  placeholder="HH:MM"
-                  className={cx(inputCls, "h-9.5 text-center")}
-                />
-              ))}
-            </div>
-          ))}
-          <span className="text-[12.5px] text-panel-muted">
-            Abierto todos los días. El sitio muestra estos horarios; el turno de reservas es único y los días reservables se definen en Calendario de reservas.
-          </span>
-        </Card>
-        <Card className="col-span-full flex flex-col gap-3 p-4.5">
-          <div className="flex items-center justify-between">
-            <h2 className="m-0 text-[15px] font-bold">Zonas de delivery</h2>
-            <AButton variant="link" className="text-[13px]" onClick={() => setZones((zs) => [...zs, { name: `Zona ${zs.length + 1}`, description: "", price: "" }])}>
-              + Agregar zona
-            </AButton>
-          </div>
-          <div className="hidden grid-cols-[1fr_1.4fr_120px_60px] gap-2 font-mono text-[10.5px] text-panel-muted uppercase sm:grid">
-            <span>Nombre</span>
-            <span>Alcance</span>
-            <span>Precio</span>
-            <span />
-          </div>
-          {zones.map((z, i) => (
-            <div key={i} className="grid grid-cols-1 items-center gap-2 border-b border-bone/6 pb-3 sm:grid-cols-[1fr_1.4fr_120px_60px] sm:border-0 sm:pb-0">
-              <input value={z.name} onChange={(e) => updZone(i, { name: e.target.value })} aria-label="Nombre de la zona" className={cx(inputCls, "h-9.5")} />
-              <input value={z.description} onChange={(e) => updZone(i, { description: e.target.value })} aria-label="Alcance" className={cx(inputCls, "h-9.5")} />
+          {WEEK_ORDER.map((d) => {
+            const h = hours.find((x) => x.day === d)!;
+            const upd = (p: Partial<DayHours>) => setHours((hs) => hs.map((x) => (x.day === d ? { ...x, ...p } : x)));
+            const time = (k: "from" | "to" | "ordersFrom", label: string) => (
               <input
-                value={z.price}
-                onChange={(e) => updZone(i, { price: e.target.value.replace(/\D/g, "") })}
-                inputMode="numeric"
-                aria-label="Precio de envío"
-                placeholder="$"
-                className={cx(inputCls, "h-9.5")}
+                value={h[k]}
+                disabled={h.closed}
+                aria-label={`${DAY_NAMES[d]}: ${label}`}
+                onChange={(e) => upd({ [k]: e.target.value })}
+                placeholder="HH:MM"
+                className={cx(inputCls, "h-9.5 text-center disabled:opacity-40")}
               />
-              <AButton variant="link" className="justify-self-start text-[13px]" onClick={() => setZones((zs) => zs.filter((_, j) => j !== i))}>
-                Quitar
-              </AButton>
-            </div>
-          ))}
-          {zones.length === 0 && <span className="text-[13px] text-panel-muted">Sin zonas: el carrito no cobra envío.</span>}
+            );
+            return (
+              <div key={d} className="grid grid-cols-[1fr_1fr_1fr] items-center gap-2 border-b border-bone/6 pb-3 sm:grid-cols-[110px_72px_1fr_1fr_1fr] sm:border-0 sm:pb-0">
+                <span className="col-span-2 text-sm font-semibold sm:col-span-1">{DAY_NAMES[d]}</span>
+                <span className="justify-self-end sm:justify-self-start">
+                  <Switch on={!h.closed} onChange={(on) => upd({ closed: !on })} label={`${DAY_NAMES[d]}: abierto`} />
+                </span>
+                {time("from", "abre")}
+                {time("to", "cierra")}
+                {time("ordersFrom", "pedidos desde")}
+              </div>
+            );
+          })}
+          <span className="text-[12.5px] text-panel-muted">
+            Se muestran en Nosotros, y el inicio y el pie usan la hora de apertura. “Pedidos desde” es la hora a partir de la cual el carrito deja enviar el pedido por
+            WhatsApp; los días cerrados no reciben pedidos. El turno de reservas es fijo y los días reservables se definen en Calendario de reservas.
+          </span>
         </Card>
       </div>
     </>

@@ -20,7 +20,7 @@ class HttpError extends Error {
 const TAKEN = "Alguien acaba de pedir esa mesa. Elegí otra.";
 
 /**
- * POST /api/reservations — crea una reserva web en estado Pendiente.
+ * POST /api/reservations — crea una reserva web ya Confirmada (el sitio lleva al cliente a WhatsApp con el mensaje listo).
  * Una mesa, o dos juntas (una fila por mesa con el mismo `group_id`). Solo acepta una de las opciones que
  * ofrece `seatingOptions` con las mesas libres de ese día (400 si no).
  * Rechaza fechas fuera del rango reservable (400) y, para hoy desde las 19:30, con 422 `cutoff`.
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
             people: r.people,
             tableN,
             groupId,
-            status: "pend" as const,
+            status: "conf" as const,
             source: "web" as const,
             note: r.comment,
           })),
@@ -86,7 +86,7 @@ export async function POST(request: Request) {
         .returning({ id: reservations.id });
       return rows[0];
     });
-    return Response.json({ id: created.id, status: "pend" }, { status: 201 });
+    return Response.json({ id: created.id, status: "conf" }, { status: 201 });
   } catch (err) {
     if (err instanceof HttpError) return Response.json({ error: err.message, code: err.code }, { status: err.status });
     if (isUniqueViolation(err)) return Response.json({ error: TAKEN }, { status: 409 });

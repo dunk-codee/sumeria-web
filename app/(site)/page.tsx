@@ -6,7 +6,7 @@ import { button, ButtonLink, Eyebrow, ExternalButton, SectionTitle, typeTag, TYP
 import { getEvents, getMenu, getSettings } from "@/lib/data";
 import { ctaHref, eventDateParts, featuredEvent } from "@/lib/events";
 import { cx } from "@/lib/format";
-import { hoursOf } from "@/lib/hours";
+import { openFromText } from "@/lib/hours";
 import { SLATE_CARD } from "@/components/site/slate";
 import { GOOGLE_REVIEWS } from "@/lib/reviews";
 import { TURN } from "@/lib/turns";
@@ -23,13 +23,13 @@ function Stars({ count, label }: { count: number; label?: string }) {
 
 export default async function HomePage() {
   const [menu, events, settings] = await Promise.all([getMenu(), getEvents(), getSettings()]);
-  const salon = hoursOf(settings, "salon");
+  const openText = openFromText(settings.hours);
   const feat = featuredEvent(events);
   const stars = menu.filter((c) => c.featured && c.products.length > 0).slice(0, 6);
 
   return (
     <>
-      <Hero salonFrom={salon.from} address={settings.address} />
+      <Hero openText={openText} address={settings.address} />
 
       {/* Lo que se viene */}
       {feat && (
@@ -169,7 +169,7 @@ export default async function HomePage() {
             <dl className="m-0 mt-4 flex max-w-md border-t border-bone/12 pt-5">
               <div className="flex flex-1 flex-col gap-1.5 pr-6">
                 <dt className="font-mono text-[11px] tracking-[.2em] text-stone-4 uppercase">Horario</dt>
-                <dd className="m-0 text-[15px] text-bone">Todos los días desde las {salon.from}</dd>
+                <dd className="m-0 text-[15px] text-bone">{openText}</dd>
               </div>
               <div className="flex flex-1 flex-col gap-1.5 border-l border-bone/12 pl-6">
                 <dt className="font-mono text-[11px] tracking-[.2em] text-stone-4 uppercase">Retiro</dt>

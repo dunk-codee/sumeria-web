@@ -3,7 +3,7 @@ import Link from "next/link";
 import { InstagramIcon, WhatsAppIcon } from "@/components/icons";
 import { button, Eyebrow, PageTitle } from "@/components/ui";
 import { getSettings } from "@/lib/data";
-import { WEEK_HOURS } from "@/lib/hours";
+import { groupedWeek } from "@/lib/hours";
 import { waDisplay, waLink } from "@/lib/whatsapp";
 
 export const metadata: Metadata = {
@@ -57,12 +57,10 @@ export default async function NosotrosPage() {
           <div className="flex flex-col gap-3.5 bg-ink p-6">
             <span className={cellLabel}>Horarios</span>
             <dl className="m-0 flex flex-col">
-              {WEEK_HOURS.map((h) => (
+              {groupedWeek(s.hours).map((h) => (
                 <div key={h.days} className="flex flex-col gap-0.5 border-b border-bone/10 py-2.5 first:pt-0 last:border-0">
                   <dt className="font-display text-[20px] font-semibold uppercase">{h.days}</dt>
-                  <dd className="m-0 text-[15px] text-sand">
-                    De {h.from} a {h.to}
-                  </dd>
+                  <dd className="m-0 text-[15px] text-sand">{h.closed ? "Cerrado" : `De ${h.from} a ${h.to}`}</dd>
                 </div>
               ))}
             </dl>
