@@ -21,9 +21,6 @@ function Stars({ count, label }: { count: number; label?: string }) {
   );
 }
 
-/** Estado inicial de lo que aparece al scrollear (lo anima `FeaturedReveal`). */
-const HIDDEN = "opacity-0 motion-reduce:opacity-100!";
-
 export default async function HomePage() {
   const [menu, events, settings] = await Promise.all([getMenu(), getEvents(), getSettings()]);
   const salon = hoursOf(settings, "salon");
@@ -98,11 +95,11 @@ export default async function HomePage() {
           <FeaturedReveal>
             <div className="mx-auto flex max-w-7xl flex-col gap-[clamp(24px,3vw,36px)]">
               <div className="flex flex-wrap items-end justify-between gap-4 px-gutter">
-                <div data-reveal className={cx("flex flex-col gap-2.5", HIDDEN)}>
+                <div className="flex flex-col gap-2.5">
                   <Eyebrow>Carta</Eyebrow>
                   <SectionTitle>¿Qué pedimos hoy?</SectionTitle>
                 </div>
-                <Link data-reveal href="/carta" className={cx(button({ variant: "text", size: "md" }), "px-0!", HIDDEN)}>
+                <Link href="/carta" className={cx(button({ variant: "text", size: "md" }), "px-0!")}>
                   Carta completa →
                 </Link>
               </div>
@@ -116,10 +113,9 @@ export default async function HomePage() {
                   return (
                     <Link
                       key={c.id}
-                      data-rail-item
                       href={`/carta#cat-${c.slug}`}
                       className={cx(
-                        "group relative block aspect-4/5 snap-center opacity-0 motion-reduce:opacity-100! outline-2 -outline-offset-2 outline-transparent transition-[outline-color] hover:outline-bone focus-visible:outline-bone",
+                        "group relative block aspect-4/5 snap-center outline-2 -outline-offset-2 outline-transparent transition-[outline-color] hover:outline-bone focus-visible:outline-bone",
                         SLATE_CARD,
                       )}
                     >
@@ -196,20 +192,22 @@ export default async function HomePage() {
       </section>
 
       {/* Reservas */}
-      <section className="relative overflow-hidden px-gutter py-[clamp(64px,9vw,144px)]">
+      <section className="relative overflow-hidden py-section">
         <span
           aria-hidden
           className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 font-display text-[clamp(200px,38vw,560px)] leading-none font-bold text-transparent uppercase select-none [-webkit-text-stroke:1px_rgb(245_243_238/.07)]"
         >
           Mesa
         </span>
-        <div className="relative mx-auto flex max-w-3xl flex-col items-center gap-5 text-center">
-          <Eyebrow>Reservas</Eyebrow>
+        <div className="relative mx-auto flex max-w-7xl flex-col items-center gap-5 px-gutter text-center">
+          <div className="w-full text-left">
+            <Eyebrow>Reservas</Eyebrow>
+          </div>
           <h2 className="m-0 font-display text-[clamp(48px,8vw,112px)] leading-[.95] font-semibold text-balance uppercase">Reservá tu mesa</h2>
           <p className="m-0 max-w-[40ch] text-base leading-[1.55] text-pretty text-stone-2">
             Turno único de {TURN.range}. Tu mesa queda guardada durante todo el servicio.
           </p>
-          <ButtonLink href="/reservas" variant="primary" className="mt-2 shadow-[0_10px_40px_rgb(215_91_75/.3)]">
+          <ButtonLink href="/reservas" variant="primary" className="mt-2">
             Reservar mesa <span aria-hidden>→</span>
           </ButtonLink>
         </div>
@@ -219,7 +217,7 @@ export default async function HomePage() {
       <section className="bg-coal py-section">
         <div className="mx-auto flex max-w-7xl flex-col gap-[clamp(24px,3vw,36px)]">
           <div className="flex flex-wrap items-end justify-between gap-4 px-gutter">
-            <div className="flex flex-col gap-2.5">
+            <div className="flex flex-col gap-4">
               <Eyebrow>Ustedes</Eyebrow>
               <SectionTitle>Así lo disfrutan</SectionTitle>
               <p className="m-0 flex flex-wrap items-center gap-x-2 text-[15px] leading-normal text-stone-2">
@@ -228,28 +226,23 @@ export default async function HomePage() {
                 <span>· {GOOGLE_REVIEWS.count} opiniones en Google</span>
               </p>
             </div>
-            <a
-              href={GOOGLE_REVIEWS.mapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-full border border-bone/35 px-5 py-3 font-display text-sm tracking-widest uppercase"
-            >
-              Ver todas en Google Maps
-            </a>
+            <ExternalButton href={GOOGLE_REVIEWS.mapsUrl} variant="text" size="md" className="px-0!">
+              Ver todas en Google Maps <span aria-hidden>→</span>
+            </ExternalButton>
           </div>
           {/* Carrusel: se desplaza solo y se frena al pasar el mouse o al enfocar; con `prefers-reduced-motion` se desliza con el dedo. */}
           <div className="group no-scrollbar overflow-x-auto mask-[linear-gradient(to_right,transparent,#000_6%,#000_94%,transparent)] motion-safe:overflow-hidden">
             <div className="flex w-max motion-safe:animate-marquee motion-safe:group-focus-within:[animation-play-state:paused] motion-safe:group-hover:[animation-play-state:paused]">
               {[0, 1].map((copy) => (
-                <ul key={copy} aria-hidden={copy === 1 || undefined} className="m-0 flex shrink-0 list-none gap-4 p-0 pr-4">
+                <ul key={copy} aria-hidden={copy === 1 || undefined} className="m-0 flex shrink-0 list-none p-0">
                   {GOOGLE_REVIEWS.items.map((r) => (
-                    <li
-                      key={r.author}
-                      className="flex w-[300px] flex-col gap-4 rounded-3xl border border-bone/20 bg-bone/8 p-6 shadow-[inset_0_1px_0_rgb(255_255_255/.14),0_12px_40px_rgb(0_0_0/.35)] backdrop-blur-xl sm:w-[360px]"
-                    >
-                      <Stars count={r.stars} label={`${r.stars} de 5 estrellas`} />
-                      <blockquote className="m-0 text-[15px] leading-[1.6] text-pretty text-bone">“{r.text}”</blockquote>
-                      <span className="mt-auto font-display text-sm tracking-widest text-stone-2 uppercase">{r.author}</span>
+                    <li key={r.author} className="flex w-[300px] flex-col gap-4 border-l border-bone/15 px-8 sm:w-[380px]">
+                      <span aria-hidden className="font-display text-7xl leading-[.6] font-semibold text-sumeria">“</span>
+                      <blockquote className="m-0 text-[17px] leading-[1.55] text-pretty text-bone">{r.text}</blockquote>
+                      <footer className="mt-auto flex flex-col gap-1 pt-2">
+                        <span className="font-display text-base tracking-widest text-bone uppercase">{r.author}</span>
+                        <Stars count={r.stars} label={`${r.stars} de 5 estrellas`} />
+                      </footer>
                     </li>
                   ))}
                 </ul>
