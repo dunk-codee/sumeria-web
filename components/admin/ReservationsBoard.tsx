@@ -1,18 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useRef, useState } from "react";
 import type { AdminReservation } from "@/lib/admin-data";
 import { isApart } from "@/lib/combos";
 import type { PlanData } from "@/lib/data";
-import { DOW, longDate, parts } from "@/lib/dates";
+import { addDays, DOW, longDate, parts } from "@/lib/dates";
 import { CheckIcon, WhatsAppIcon } from "@/components/icons";
 import { cx, tablesLabel } from "@/lib/format";
-import { TURN } from "@/lib/turns";
+import { reservationRange } from "@/lib/hours";
+import type { DayHours } from "@/lib/schema";
 import { FloorPlan, type PlanTable } from "../FloorPlan";
 import { XMark } from "../XMark";
 import { hasPhone, NewReservationButton, NewReservationDrawer, SOURCE_LABEL, useResActions } from "./reservations";
-import { AButton, ArrivedTag, Card, PANEL_TABLE, StatusTag } from "./ui";
+import { AButton, ArrivedTag, Card, ConfirmModal, PANEL_TABLE, StatusTag } from "./ui";
 import { PANEL_CHAIR } from "./styles";
 
 type Props = {
@@ -23,12 +25,17 @@ type Props = {
   week: AdminReservation[];
   plan: PlanData;
   address: string;
+  hours: DayHours[];
 };
 
-const href = (p: { date: string; view: string }) => `/admin/reservas?date=${p.date}&view=${p.view}`;
+const href = (p: { date: string; view: string; from?: string }) =>
+  `/admin/reservas?date=${p.date}&view=${p.view}${p.from ? `&desde=${p.from}` : ""}`;
 
-export function ReservationsBoard({ date, view, days, today, week, plan, address }: Props) {
+export function ReservationsBoard({ date, view, days, today, week, plan, address, hours }: Props) {
   const a = useResActions(address);
+  const router = useRouter();
+  const [toCancel, setToCancel] = useState<AdminReservation | null>(null);
+  const dateRef = useRef<HTMLInputElement>(null);
   const [sel, setSel] = useState<number | null>(null);
   const [newAt, setNewAt] = useState<number | null>(null);
 
@@ -88,7 +95,7 @@ export function ReservationsBoard({ date, view, days, today, week, plan, address
               ).map(([v, label]) => (
                 <Link
                   key={v}
-                  href={href({ date, view: v })}
+                  href={href({ date, view: v, from: days[0] })}
                   aria-current={view === v ? "page" : undefined}
                   className={cx("flex h-9 items-center px-3.5 text-[13px] font-semibold", view === v ? "bg-panel-text text-panel-bg hover:text-panel-bg" : "text-panel-soft")}
                 >
@@ -100,16 +107,23 @@ export function ReservationsBoard({ date, view, days, today, week, plan, address
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-1.5">
+            <Link
+              href={href({ date: addDays(days[0], -7), view, from: addDays(days[0], -7) })}
+              aria-label="Semana anterior"
+              className="flex h-14 w-9 flex-none items-center justify-center rounded border border-bone/14 text-lg text-panel-text hover:text-panel-text"
+            >
+              ‹
+            </Link>
           <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
             {days.map((d) => {
               const on = d === date;
               const p = parts(d);
               const n = week.filter((r) => r.date === d && r.status !== "canc" && r.status !== "occ").length;
-              const hasPend = week.some((r) => r.date === d && r.status === "pend");
               return (
                 <Link
                   key={d}
-                  href={href({ date: d, view })}
+                  href={href({ date: d, view, from: days[0] })}
                   aria-current={on ? "date" : undefined}
                   className={cx(
                     "flex w-14.5 flex-none flex-col items-center gap-px rounded border py-1.75 text-panel-text hover:text-panel-text",
@@ -118,16 +132,50 @@ export function ReservationsBoard({ date, view, days, today, week, plan, address
                 >
                   <span className="font-mono text-[9.5px]">{d === today ? "HOY" : DOW[p.dow]}</span>
                   <span className="font-display text-xl leading-[1.1] font-semibold">{p.day}</span>
-                  <span className={cx("text-[10.5px]", hasPend ? "text-sumeria-light" : "text-panel-muted")}>{n ? `${n} res.` : "—"}</span>
+                  <span className="text-[10.5px] text-panel-muted">{n ? `${n} res.` : "—"}</span>
                 </Link>
               );
             })}
           </div>
+            <Link
+              href={href({ date: addDays(days[6], 1), view, from: addDays(days[6], 1) })}
+              aria-label="Semana siguiente"
+              className="flex h-14 w-9 flex-none items-center justify-center rounded border border-bone/14 text-lg text-panel-text hover:text-panel-text"
+            >
+              ›
+            </Link>
+          </div>
+          {/* El calendario nativo usa el formato del navegador (mes/día en EE. UU.); se muestra día/mes y se abre a mano. */}
+          <span className="relative inline-flex">
+            <button
+              type="button"
+              onClick={() => dateRef.current?.showPicker?.()}
+              aria-label={`Ir a una fecha. Fecha elegida: ${longDate(date)}`}
+              className="flex h-9 items-center gap-2 rounded border border-bone/16 bg-panel-bg px-3 text-[13px] text-panel-text"
+            >
+              <span className="font-mono">{date.split("-").reverse().join("/")}</span>
+              <span aria-hidden>▾</span>
+            </button>
+            <input
+              ref={dateRef}
+              type="date"
+              value={date}
+              tabIndex={-1}
+              aria-hidden
+              onChange={(e) => e.target.value && router.push(href({ date: e.target.value, view, from: e.target.value }))}
+              className="pointer-events-none absolute inset-0 opacity-0"
+            />
+          </span>
+          {date !== today && (
+            <Link href={href({ date: today, view, from: today })} className="text-[13px] text-panel-soft underline">
+              Ir a hoy
+            </Link>
+          )}
           <span className="font-mono text-[11px] text-panel-muted">
-            Turno único · {TURN.range}
+            Turno único · {reservationRange(hours, date)}
           </span>
           <span className="ml-auto text-[13px] text-panel-muted">
-            {active.length} reservas · {active.reduce((x, r) => x + r.people, 0)} personas · {active.filter((r) => r.status === "pend").length} pendientes
+            {active.length} reservas · {active.reduce((x, r) => x + r.people, 0)} personas
           </span>
         </div>
       </div>
@@ -219,7 +267,7 @@ export function ReservationsBoard({ date, view, days, today, week, plan, address
                       )}
                       {r.status === "conf" && (
                         <>
-                          <AButton variant="cancel" size="xs" disabled={a.pending} onClick={() => a.cancel(r)}>
+                          <AButton variant="cancel" size="xs" disabled={a.pending} onClick={() => setToCancel(r)}>
                             Cancelar
                           </AButton>
                           {!r.arrived && (
@@ -331,10 +379,10 @@ export function ReservationsBoard({ date, view, days, today, week, plan, address
                         {!selR.arrived && (
                           <AButton variant="arrived" disabled={a.pending} onClick={() => a.seat(selR)}>
                             <CheckIcon size={15} />
-                            Llegaron · marcar ocupada
+                            Llegaron
                           </AButton>
                         )}
-                        <AButton variant="cancel" disabled={a.pending} onClick={() => a.cancel(selR)}>
+                        <AButton variant="cancel" disabled={a.pending} onClick={() => setToCancel(selR)}>
                           Cancelar reserva
                         </AButton>
                       </>
@@ -366,6 +414,25 @@ export function ReservationsBoard({ date, view, days, today, week, plan, address
           <NewReservationDrawer open={newAt != null} onClose={() => setNewAt(null)} days={days} initial={{ date, tableN: newAt ?? undefined }} />
         </div>
       )}
+      <ConfirmModal
+        open={toCancel !== null}
+        title="¿Cancelar la reserva?"
+        body={
+          toCancel && (
+            <>
+              Vas a cancelar la reserva de <strong className="text-panel-text">{toCancel.name}</strong> ({toCancel.people} personas, {tablesLabel(toCancel.tables)}). La mesa queda libre y la podés
+              restaurar después.
+            </>
+          )
+        }
+        confirmLabel="Sí, cancelar"
+        busy={a.pending}
+        onClose={() => setToCancel(null)}
+        onConfirm={() => {
+          if (toCancel) a.cancel(toCancel);
+          setToCancel(null);
+        }}
+      />
     </>
   );
 }

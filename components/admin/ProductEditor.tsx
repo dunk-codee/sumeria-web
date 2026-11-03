@@ -9,7 +9,7 @@ import { PLACEHOLDER_LABELS } from "@/lib/placeholders";
 import { PLACEHOLDERS, type Category, type Placeholder, type Product } from "@/lib/schema";
 import { ProductCard } from "../site/ProductCard";
 import { PhotoUpload } from "./PhotoUpload";
-import { AButton, abtn, Card, Field, inputCls, Switch, useRun } from "./ui";
+import { AButton, abtn, Card, ConfirmModal, Field, inputCls, Switch, useRun } from "./ui";
 
 const DESC_SOFT = 120;
 
@@ -17,6 +17,7 @@ export function ProductEditor({ product, cats, defaultCat }: { product: Product 
   const router = useRouter();
   const run = useRun();
   const [saving, start] = useTransition();
+  const [askDelete, setAskDelete] = useState(false);
   const [ed, setEd] = useState({
     name: product?.name ?? "",
     description: product?.description ?? "",
@@ -32,15 +33,31 @@ export function ProductEditor({ product, cats, defaultCat }: { product: Product 
   });
   const set = (p: Partial<typeof ed>) => setEd((s) => ({ ...s, ...p }));
 
-  const save = () =>
+  const [errors, setErrors] = useState<{ name?: string; description?: string; price?: string }>({});
+  const clear = (k: "name" | "description" | "price") => setErrors((e) => (e[k] ? { ...e, [k]: undefined } : e));
+  const bad = (k: "name" | "description" | "price") => (errors[k] ? "border-sumeria" : "");
+
+  const save = () => {
+    const next: { name?: string; description?: string; price?: string } = {};
+    if (!ed.name.trim()) next.name = "Poné un nombre para el producto.";
+    if (!ed.description.trim()) next.description = "Escribí una descripción corta.";
+    if (!(Number(ed.price) > 0)) next.price = "Poné un precio mayor a 0.";
+    setErrors(next);
+    const first = next.name ? "product-name" : next.description ? "product-description" : next.price ? "product-price" : null;
+    if (first) {
+      document.getElementById(first)?.focus();
+      return;
+    }
     start(async () => {
       const input: ProductInput = { ...ed, id: product?.id, price: Number(ed.price) || 0 };
       const r = await run(saveProduct(input), "Producto guardado. Ya se ve en la carta.");
       if (r?.ok) router.push("/admin/productos");
     });
+  };
 
   const remove = () => {
-    if (!product || !confirm(`¿Eliminar "${product.name}" de la carta? No se puede deshacer.`)) return;
+    if (!product) return;
+    setAskDelete(false);
     start(async () => {
       const r = await run(deleteProduct(product.id), "Producto eliminado.");
       if (r?.ok) router.push("/admin/productos");
@@ -61,7 +78,7 @@ export function ProductEditor({ product, cats, defaultCat }: { product: Product 
             Cancelar
           </Link>
           <AButton variant="primary" onClick={save} disabled={saving}>
-            {saving ? "Guardando…" : "Guardar cambios"}
+            {saving ? "Guardando…" : product ? "Guardar cambios" : "Crear producto"}
           </AButton>
         </div>
       </div>
@@ -76,11 +93,18 @@ export function ProductEditor({ product, cats, defaultCat }: { product: Product 
               hint="JPG o PNG, horizontal. Mejor sobre fondo oscuro, con luz cálida. Un PNG sin fondo también queda bien."
             />
           </Card>
-          <Field label="Nombre">
-            <input value={ed.name} onChange={(e) => set({ name: e.target.value })} className={cx(inputCls, "h-10.5 text-[15px]")} />
+          <Field label="Nombre" error={errors.name}>
+            <input
+              id="product-name"
+              value={ed.name}
+              onChange={(e) => (set({ name: e.target.value }), clear("name"))}
+              aria-invalid={!!errors.name}
+              className={cx(inputCls, "h-10.5 text-[15px]", bad("name"))}
+            />
           </Field>
           <Field
             label="Descripción corta"
+            error={errors.description}
             hint={
               <span className={ed.description.length > DESC_SOFT ? "text-kraft" : undefined}>
                 {ed.description.length}/{DESC_SOFT} · corta y concreta
@@ -88,15 +112,24 @@ export function ProductEditor({ product, cats, defaultCat }: { product: Product 
             }
           >
             <textarea
+              id="product-description"
               value={ed.description}
-              onChange={(e) => set({ description: e.target.value.slice(0, 280) })}
+              onChange={(e) => (set({ description: e.target.value.slice(0, 280) }), clear("description"))}
               rows={3}
-              className={cx(inputCls, "h-auto resize-y py-2.5 text-[15px]")}
+              aria-invalid={!!errors.description}
+              className={cx(inputCls, "h-auto resize-y py-2.5 text-[15px]", bad("description"))}
             />
           </Field>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <Field label="Precio">
-              <input value={ed.price} onChange={(e) => set({ price: e.target.value.replace(/\D/g, "") })} inputMode="numeric" className={cx(inputCls, "h-10.5 text-[15px]")} />
+            <Field label="Precio" error={errors.price}>
+              <input
+                id="product-price"
+                value={ed.price}
+                onChange={(e) => (set({ price: e.target.value.replace(/\D/g, "") }), clear("price"))}
+                inputMode="numeric"
+                aria-invalid={!!errors.price}
+                className={cx(inputCls, "h-10.5 text-[15px]", bad("price"))}
+              />
             </Field>
             <Field
               label={
@@ -105,7 +138,13 @@ export function ProductEditor({ product, cats, defaultCat }: { product: Product 
                 </>
               }
             >
-              <input value={ed.pieces} onChange={(e) => set({ pieces: e.target.value })} placeholder="Ej.: 10 o 4 unidades" className={cx(inputCls, "h-10.5 text-[15px]")} />
+              <input
+                value={ed.pieces}
+                onChange={(e) => set({ pieces: e.target.value.replace(/\D/g, "").slice(0, 3) })}
+                inputMode="numeric"
+                placeholder="Ej.: 10"
+                className={cx(inputCls, "h-10.5 text-[15px]")}
+              />
             </Field>
             <Field label="Categoría">
               <select value={ed.categoryId} onChange={(e) => set({ categoryId: Number(e.target.value) })} className={cx(inputCls, "h-10.5 px-2.5")}>
@@ -130,7 +169,7 @@ export function ProductEditor({ product, cats, defaultCat }: { product: Product 
             {(
               [
                 ["glutenFree", "Sin gluten", "Muestra la etiqueta en la carta"],
-                ["available", "Disponible hoy", "Si lo pausás, aparece como “no disponible hoy” y no se puede pedir"],
+                ["available", "Disponible", "Si lo pausás, aparece como “no disponible” y no se puede pedir hasta que lo vuelvas a activar"],
               ] as const
             ).map(([k, title, sub]) => (
               <div key={k} className="flex items-center justify-between gap-3 bg-panel-surface px-4 py-3.5">
@@ -143,7 +182,7 @@ export function ProductEditor({ product, cats, defaultCat }: { product: Product 
             ))}
           </div>
           {product && (
-            <AButton variant="danger" onClick={remove} disabled={saving} className="self-start text-[13px]">
+            <AButton variant="danger" onClick={() => setAskDelete(true)} disabled={saving} className="self-start text-[13px]">
               Eliminar producto
             </AButton>
           )}
@@ -168,6 +207,20 @@ export function ProductEditor({ product, cats, defaultCat }: { product: Product 
           />
         </div>
       </div>
+      <ConfirmModal
+        open={askDelete}
+        title="¿Eliminar el producto?"
+        body={
+          <>
+            Vas a eliminar <strong className="text-panel-text">{product?.name}</strong> de la carta y no se puede deshacer. Si es solo por un rato, mejor pausalo con el interruptor
+            “Disponible”.
+          </>
+        }
+        confirmLabel="Sí, eliminar"
+        busy={saving}
+        onClose={() => setAskDelete(false)}
+        onConfirm={remove}
+      />
     </>
   );
 }

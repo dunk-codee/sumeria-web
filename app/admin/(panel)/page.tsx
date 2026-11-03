@@ -5,7 +5,7 @@ import { abtn } from "@/components/admin/styles";
 import { PageHead } from "@/components/admin/ui";
 import { adminProducts, planTables, reservationsBetween } from "@/lib/admin-data";
 import { requireAdmin } from "@/lib/auth";
-import { longDate, nextDays, nowTime, todayISO } from "@/lib/dates";
+import { addDays, longDate, nextDays, nowTime, todayISO } from "@/lib/dates";
 
 function greeting(time: string) {
   const h = Number(time.slice(0, 2));
@@ -16,7 +16,10 @@ export default async function AdminHome() {
   await requireAdmin();
   const today = todayISO();
   const time = nowTime();
-  const [todayRes, plan, { prods }] = await Promise.all([reservationsBetween(today, today), planTables(), adminProducts()]);
+  const tomorrow = addDays(today, 1);
+  const [both, plan, { prods }] = await Promise.all([reservationsBetween(today, tomorrow), planTables(), adminProducts()]);
+  const todayRes = both.filter((r) => r.date === today);
+  const tomorrowRes = both.filter((r) => r.date === tomorrow && r.status !== "occ");
   const active = todayRes.filter((r) => r.status !== "canc" && r.status !== "occ");
   const busy = new Set(todayRes.filter((r) => r.status !== "canc").flatMap((r) => r.tables));
   const freeNow = plan.tables.filter((t) => !busy.has(t.n)).length;
@@ -24,8 +27,8 @@ export default async function AdminHome() {
 
   const stats = [
     { label: "Reservas de hoy", value: active.length, sub: `${active.reduce((a, r) => a + r.people, 0)} personas esperadas`, href: `/admin/reservas?date=${today}` },
-    { label: "Mesas libres ahora", value: `${freeNow} / ${plan.tables.length}`, sub: "Para el servicio de hoy", href: `/admin/reservas?date=${today}&view=plan` },
-    { label: "Productos pausados", value: paused, sub: "Se ven como “no disponible hoy”", href: "/admin/productos?disp=off" },
+    { label: "Mesas libres hoy", value: `${freeNow} / ${plan.tables.length}`, sub: "Sin reserva para hoy", href: `/admin/reservas?date=${today}&view=plan` },
+    { label: "Productos pausados", value: paused, sub: "Se ven como “no disponible”", href: "/admin/productos?disp=off" },
   ];
 
   return (
@@ -53,7 +56,7 @@ export default async function AdminHome() {
             </Link>
           ))}
         </div>
-        <HomeLists today={todayRes.filter((r) => r.status !== "occ")} />
+        <HomeLists today={todayRes.filter((r) => r.status !== "occ")} tomorrow={tomorrowRes} tomorrowISO={tomorrow} />
       </div>
     </>
   );

@@ -7,7 +7,9 @@ import { bookingDays, isPastCutoff, type BookingConfig } from "@/lib/booking";
 import type { SeatingOption, SeatingTier } from "@/lib/combos";
 import { DOW, longDate, MON, parts, shortDate, todayISO } from "@/lib/dates";
 import { cx, plural, tablesLabel } from "@/lib/format";
-import { MAX_PEOPLE, SAME_DAY_CUTOFF, TOLERANCE_MIN, TURN } from "@/lib/turns";
+import { reservationRange, reservationTime } from "@/lib/hours";
+import type { DayHours } from "@/lib/schema";
+import { MAX_PEOPLE, TOLERANCE_MIN } from "@/lib/turns";
 import { reservationRequestMessage, sameDayConsultMessage, waLink } from "@/lib/whatsapp";
 import { FloorPlan, type PlanGroup, type PlanTable } from "../FloorPlan";
 import { button } from "../ui";
@@ -15,7 +17,7 @@ import { XLoader, XMark } from "../XMark";
 import { SITE_CHAIR, SITE_TABLE, SITE_TABLE_ARIA, type SiteTableKind } from "./tableStyles";
 
 type Status = "free" | "pend" | "res";
-type LastRes = { table: string; name: string; date: string; people: number; waHref: string };
+type LastRes = { table: string; name: string; date: string; people: number; waHref: string; range: string };
 type Availability = {
   date: string;
   tables: { n: number; capacity: number; status: Status }[];
@@ -28,7 +30,7 @@ const field = "rounded-xs border bg-coal px-3.5 text-base text-bone outline-none
 const h3 = "m-0 font-display text-xl font-medium tracking-[.08em] uppercase";
 const sameSet = (a: number[], b: number[]) => a.length === b.length && [...a].sort().join() === [...b].sort().join();
 
-export function Reservation({ plan, whatsapp, booking }: { plan: PlanData; whatsapp: string; booking: BookingConfig }) {
+export function Reservation({ plan, whatsapp, booking, week }: { plan: PlanData; whatsapp: string; booking: BookingConfig; week: DayHours[] }) {
   const [today, setToday] = useState<string | null>(null);
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [date, setDate] = useState<string>("");
@@ -54,17 +56,17 @@ export function Reservation({ plan, whatsapp, booking }: { plan: PlanData; whats
   useEffect(() => {
     const now = new Date();
     const t = todayISO(now);
-    const open = bookingDays(booking, t).filter((d) => !d.blocked);
-    const first = open.find((d) => !isPastCutoff(d.date, now)) ?? open[0];
+    const open = bookingDays(booking, t, week).filter((d) => !d.blocked);
+    const first = open.find((d) => !isPastCutoff(d.date, now, week)) ?? open[0];
     /* eslint-disable react-hooks/set-state-in-effect -- fecha del cliente */
     setToday(t);
     setNowMs(now.getTime());
     setDate(first?.date ?? "");
     /* eslint-enable react-hooks/set-state-in-effect */
-    // El corte de las 19:30 puede llegar mientras la persona completa el formulario.
+    // El corte del día puede llegar mientras la persona completa el formulario.
     const id = setInterval(() => setNowMs(Date.now()), 30_000);
     return () => clearInterval(id);
-  }, [booking]);
+  }, [booking, week]);
 
   useEffect(() => {
     if (!date) return;
@@ -82,13 +84,13 @@ export function Reservation({ plan, whatsapp, booking }: { plan: PlanData; whats
     return () => ctrl.abort();
   }, [date, people, reload]);
 
-  const dates = useMemo(() => (today ? bookingDays(booking, today) : []), [booking, today]);
+  const dates = useMemo(() => (today ? bookingDays(booking, today, week) : []), [booking, today, week]);
   const statuses = useMemo(() => (avail ? Object.fromEntries(avail.tables.map((t) => [t.n, t.status])) : null), [avail]);
   const selTables = selection.map((n) => plan.tables.find((t) => t.n === n)).filter((t) => t != null);
   const selCap = selTables.reduce((a, t) => a + t.capacity, 0);
   const selLabel = tablesLabel(selection);
   // Corte de hoy: lo calcula el cliente con la hora argentina y lo confirma el servidor.
-  const cutoff = Boolean(date) && (isPastCutoff(date, new Date(nowMs)) || (avail?.date === date && avail.cutoff) || cutoffDate === date);
+  const cutoff = Boolean(date) && (isPastCutoff(date, new Date(nowMs), week) || (avail?.date === date && avail.cutoff) || cutoffDate === date);
 
   // Opciones de lugar para el grupo (ver lib/combos.ts): mesas solas y pares (vecinos o, si no queda ninguno, separados).
   const options = useMemo(() => (avail && !cutoff ? avail.options : []), [avail, cutoff]);
@@ -258,13 +260,13 @@ export function Reservation({ plan, whatsapp, booking }: { plan: PlanData; whats
           name,
           phone,
           dateLabel: longDate(date),
-          timeRange: TURN.range,
+          timeRange: reservationRange(week, date),
           people,
           tableLabel: selLabel,
           comment,
         }),
       );
-      setLast({ table: selLabel, name: name.trim(), date: longDate(date), people, waHref });
+      setLast({ table: selLabel, name: name.trim(), date: longDate(date), people, waHref, range: reservationRange(week, date) });
       setStep(4);
       setSelection([]);
       setAnchor(null);
@@ -299,7 +301,7 @@ export function Reservation({ plan, whatsapp, booking }: { plan: PlanData; whats
         <h3 className="m-0 font-display text-2xl leading-[1.05] font-semibold uppercase">Las reservas online para hoy ya cerraron</h3>
       </div>
       <p className="m-0 text-[15px] leading-normal text-sand">
-        Desde las {SAME_DAY_CUTOFF} no tomamos reservas por la web para el mismo día. Escribinos por WhatsApp y te decimos si queda una mesa libre.
+        Desde las {reservationTime(week, date)} no tomamos reservas por la web para el mismo día. Escribinos por WhatsApp y te decimos si queda una mesa libre.
       </p>
       <a href={consultHref} target="_blank" rel="noopener noreferrer" className={cx(button({ variant: "primary" }), "self-start")}>
         Consultar para hoy por WhatsApp
@@ -425,7 +427,7 @@ export function Reservation({ plan, whatsapp, booking }: { plan: PlanData; whats
             <h3 className={h3}>Horario</h3>
             <div className="flex flex-col gap-1.5 rounded-xs border-[1.5px] border-bone/18 bg-coal p-4">
               <span className="font-display text-lg font-semibold uppercase">Turno único</span>
-              <span className="font-mono text-xs text-stone-2">{TURN.range}</span>
+              <span className="font-mono text-xs text-stone-2">{date ? reservationRange(week, date) : "Elegí un día"}</span>
             </div>
             <span className="text-[13px] text-stone-3">Tolerancia de {TOLERANCE_MIN} minutos: si llegás más tarde, la reserva se libera.</span>
           </div>
@@ -677,7 +679,7 @@ export function Reservation({ plan, whatsapp, booking }: { plan: PlanData; whats
                 <dt className="text-stone-3">Día</dt>
                 <dd className="m-0">{longDate(date)}</dd>
                 <dt className="text-stone-3">Horario</dt>
-                <dd className="m-0">{TURN.range}</dd>
+                <dd className="m-0">{reservationRange(week, date)}</dd>
                 <dt className="text-stone-3">Personas</dt>
                 <dd className="m-0">{people}</dd>
                 <dt className="text-stone-3">Ubicación</dt>
@@ -709,7 +711,7 @@ export function Reservation({ plan, whatsapp, booking }: { plan: PlanData; whats
               <dt className="text-stone-3">Día</dt>
               <dd className="m-0">{last.date}</dd>
               <dt className="text-stone-3">Horario</dt>
-              <dd className="m-0">{TURN.range}</dd>
+              <dd className="m-0">{last.range}</dd>
               <dt className="text-stone-3">Personas</dt>
               <dd className="m-0">{last.people}</dd>
             </dl>

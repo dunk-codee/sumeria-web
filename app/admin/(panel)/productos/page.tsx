@@ -21,7 +21,7 @@ export default async function ProductosAdmin({ searchParams }: PageProps<"/admin
         </Link>
       </PageHead>
       <div className="pt-4">
-        <ProductsTable cats={cats} prods={prods} initialAvail={avail} />
+        <ProductsTable cats={cats} prods={prods} initialAvail={avail} initialCat={cats.some((c) => c.id === Number(sp.cat)) ? Number(sp.cat) : "todas"} />
       </div>
     </>
   );

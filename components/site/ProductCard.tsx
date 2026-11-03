@@ -52,7 +52,7 @@ export function ProductCard({ p, preview = false }: { p: MenuProduct; preview?: 
           <div className={cx("order-3 flex flex-wrap items-center gap-1.5 d:order-1 d:min-h-5", preview && "order-1! min-h-5")}>
             {pcs && <span className="text-[11px] font-medium tracking-[.22em] text-stone-2 uppercase d:text-xs">{pcs}</span>}
             {p.glutenFree && <MetaTag tone="gf">Sin gluten</MetaTag>}
-            {off && <MetaTag tone="off">No disponible hoy</MetaTag>}
+            {off && <MetaTag tone="off">No disponible</MetaTag>}
           </div>
         )}
         <div className="order-4 mt-auto flex items-center justify-between gap-2 d:pt-3">

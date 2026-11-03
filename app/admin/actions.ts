@@ -10,6 +10,9 @@ import { MAX_BOOKING_SPAN } from "@/lib/booking";
 import { TAGS } from "@/lib/data";
 import { DEFAULT_SETTINGS } from "@/lib/defaults";
 import { addDays, todayISO } from "@/lib/dates";
+import { CATEGORY_NAME_MAX, FEATURED_MAX } from "@/lib/categories";
+import { arPhoneDigits, instagramHandle, isArPhone, isInstagramHandle } from "@/lib/contact";
+import { reservationTime, weekOf } from "@/lib/hours";
 import { getDb, isUniqueViolation } from "@/lib/db";
 import { TABLE_BOX, TABLE_MAX, TABLE_MIN } from "@/lib/plan";
 import {
@@ -117,6 +120,12 @@ export async function changeReservationTable(id: number, tableN: number): Promis
   return ok();
 }
 
+/** Hora de reserva de un día (la de apertura de ese día de la semana). */
+async function timeFor(db: Awaited<ReturnType<typeof getDb>>, date: string) {
+  const [row] = await db.select({ hours: settings.hours }).from(settings).where(eq(settings.id, 1));
+  return reservationTime(weekOf(row?.hours), date);
+}
+
 const manualRes = z.object({
   source: z.enum(["tel", "wa"]),
   name: z.string().trim().min(1).max(80),
@@ -137,7 +146,7 @@ export async function createManualReservation(input: z.input<typeof manualRes>):
   try {
     const [row] = await db
       .insert(reservations)
-      .values({ ...r, turn: TURN.id, time: TURN.time, phone: r.phone || "—", status: "conf" })
+      .values({ ...r, turn: TURN.id, time: await timeFor(db, r.date), phone: r.phone || "—", status: "conf" })
       .returning({ id: reservations.id });
     done();
     return ok(row.id);
@@ -159,7 +168,7 @@ export async function setWalkin(date: string, tableN: number, on: boolean): Prom
         date,
         turn: TURN.id,
         tableN,
-        time: TURN.time,
+        time: await timeFor(db, date),
         name: "Sin reserva",
         people: 0,
         status: "occ",
@@ -178,26 +187,22 @@ export async function setWalkin(date: string, tableN: number, on: boolean): Prom
 
 /* ---------------- Calendario de reservas ---------------- */
 
-const bookingInput = z
-  .object({
-    from: isoDate.nullable(),
-    to: isoDate.nullable(),
-    blocked: z.array(isoDate).max(400),
-  })
-  .refine((b) => (b.from === null) === (b.to === null), { message: "Elegí el primer y el último día, o dejá los dos vacíos." })
-  .refine((b) => !b.from || !b.to || b.to >= b.from, { message: "El último día tiene que ser igual o posterior al primero." })
-  .refine((b) => !b.from || !b.to || b.to <= addDays(b.from, MAX_BOOKING_SPAN - 1), {
-    message: `El rango puede abarcar hasta ${MAX_BOOKING_SPAN} días.`,
-  });
+const bookingInput = z.object({
+  /** Días hacia adelante que se puede reservar (rango móvil que se renueva cada día). Null: valor por defecto. */
+  ahead: z.number().int().min(0).max(MAX_BOOKING_SPAN - 1).nullable(),
+  blocked: z.array(isoDate).max(400),
+});
 export type BookingInput = z.input<typeof bookingInput>;
 
-/** Define desde qué día hasta cuál se puede reservar desde el sitio y qué días quedan cerrados. */
+/** Define cuántos días hacia adelante se reserva desde el sitio (se renueva solo) y qué días quedan cerrados. */
 export async function saveBooking(input: BookingInput): Promise<ActionResult> {
   await requireAdmin();
   const p = bookingInput.safeParse(input);
-  if (!p.success) return fail(p.error.issues[0]?.message ?? "Revisá las fechas.");
-  const { from, to } = p.data;
+  if (!p.success) return fail(p.error.issues[0]?.message ?? "Revisá los datos.");
   const today = todayISO();
+  // Se guarda el día de hoy y hoy + anticipación: la diferencia es lo único que se usa (ver `bookingAhead`).
+  const from = p.data.ahead === null ? null : today;
+  const to = p.data.ahead === null ? null : addDays(today, p.data.ahead);
   const blocked = [...new Set(p.data.blocked)].filter((d) => d >= today).sort();
   const { zones: _z, ...defaults } = DEFAULT_SETTINGS;
   void _z;
@@ -216,9 +221,9 @@ const productInput = z.object({
   id: z.number().int().positive().optional(),
   categoryId: z.number().int().positive(),
   name: z.string().trim().min(1, "Poné un nombre").max(80),
-  description: z.string().trim().max(280),
+  description: z.string().trim().min(1, "Escribí una descripción corta").max(280),
   pieces: z.string().trim().max(30),
-  price: z.number().int().min(0).max(10_000_000),
+  price: z.number().int().min(1, "Poné un precio mayor a 0").max(10_000_000),
   glutenFree: z.boolean(),
   available: z.boolean(),
   placeholder: z.enum(PLACEHOLDERS),
@@ -236,18 +241,40 @@ export async function saveProduct(input: ProductInput): Promise<ActionResult> {
   const values = { ...data, pieces: data.pieces || null };
   const db = await getDb();
   let savedId = id;
-  if (id) {
-    await db.update(products).set(values).where(eq(products.id, id));
-  } else {
+  const nextPosition = async () => {
     const [{ max }] = await db
       .select({ max: sql<number>`coalesce(max(${products.position}), -1)::int` })
       .from(products)
       .where(eq(products.categoryId, data.categoryId));
-    const [row] = await db.insert(products).values({ ...values, position: max + 1 }).returning({ id: products.id });
+    return max + 1;
+  };
+  if (id) {
+    const [prev] = await db.select({ categoryId: products.categoryId }).from(products).where(eq(products.id, id));
+    // Si cambia de categoría, va al final de la nueva (no se queda en el medio con el orden de la anterior).
+    await db.update(products).set(prev && prev.categoryId !== data.categoryId ? { ...values, position: await nextPosition() } : values).where(eq(products.id, id));
+  } else {
+    const [row] = await db.insert(products).values({ ...values, position: await nextPosition() }).returning({ id: products.id });
     savedId = row.id;
   }
   done(TAGS.menu);
   return ok(savedId);
+}
+
+/** Guarda el orden de los productos de una categoría (el de la carta). */
+export async function reorderProducts(categoryId: number, ids: number[]): Promise<ActionResult> {
+  await requireAdmin();
+  const p = z.object({ categoryId: z.number().int().positive(), ids: z.array(z.number().int().positive()).min(1).max(500) }).safeParse({ categoryId, ids });
+  if (!p.success) return fail("No pudimos guardar el orden.");
+  const db = await getDb();
+  await db.transaction(async (tx) => {
+    const own = await tx.select({ id: products.id }).from(products).where(and(eq(products.categoryId, p.data.categoryId), inArray(products.id, p.data.ids)));
+    const valid = new Set(own.map((r) => r.id));
+    let i = 0;
+    for (const id of p.data.ids) if (valid.has(id)) await tx.update(products).set({ position: i++ }).where(eq(products.id, id));
+  });
+  // Solo se expira la carta: la pantalla ya tiene el orden nuevo, así que no hace falta volver a pedir la página (se sentía trabado).
+  updateTag(TAGS.menu);
+  return ok();
 }
 
 export async function toggleProductAvailable(id: number, available: boolean): Promise<ActionResult> {
@@ -293,17 +320,36 @@ export async function updateCategory(id: number, patch: { name?: string; visible
   const db = await getDb();
   const set: Partial<typeof categories.$inferInsert> = {};
   if (patch.name !== undefined) {
-    const name = patch.name.trim().slice(0, 40);
+    const name = patch.name.trim();
     if (!name) return fail("La categoría necesita un nombre.");
+    if (name.length > CATEGORY_NAME_MAX) return fail(`El nombre puede tener hasta ${CATEGORY_NAME_MAX} letras.`);
+    const others = await db.select({ name: categories.name }).from(categories).where(ne(categories.id, id));
+    if (others.some((o) => o.name.trim().toLowerCase() === name.toLowerCase())) return fail("Ya hay una categoría con ese nombre.");
     set.name = name;
     // El slug sigue al nombre (es el ancla #cat-… de la carta) si no choca con otro.
     const slug = slugify(name);
     const [clash] = await db.select({ id: categories.id }).from(categories).where(and(eq(categories.slug, slug), ne(categories.id, id)));
     if (!clash) set.slug = slug;
   }
+  const [prev] = patch.name !== undefined ? await db.select({ slug: categories.slug }).from(categories).where(eq(categories.id, id)) : [];
   if (patch.visible !== undefined) set.visible = patch.visible;
-  if (patch.featured !== undefined) set.featured = patch.featured;
+  if (patch.featured !== undefined) {
+    if (patch.featured) {
+      const [{ n }] = await db
+        .select({ n: sql<number>`count(*)::int` })
+        .from(categories)
+        .where(and(eq(categories.featured, true), ne(categories.id, id)));
+      if (n >= FEATURED_MAX) return fail(`En el inicio caben ${FEATURED_MAX} categorías. Sacá una para agregar otra.`);
+    }
+    set.featured = patch.featured;
+  }
   await db.update(categories).set(set).where(eq(categories.id, id));
+  // Si cambió el slug, las publicaciones cuyo botón llevaba a esta categoría pasan a apuntar al slug nuevo.
+  if (prev && set.slug && set.slug !== prev.slug) {
+    await db.update(events).set({ ctaTarget: `cat:${set.slug}` }).where(eq(events.ctaTarget, `cat:${prev.slug}`));
+    done(TAGS.menu, TAGS.events);
+    return ok();
+  }
   done(TAGS.menu);
   return ok();
 }
@@ -315,7 +361,8 @@ export async function reorderCategories(ids: number[]): Promise<ActionResult> {
   await db.transaction(async (tx) => {
     for (const [i, id] of ids.entries()) await tx.update(categories).set({ position: i }).where(eq(categories.id, id));
   });
-  done(TAGS.menu);
+  // Solo se expira la carta: la pantalla ya tiene el orden nuevo y no hace falta volver a pedir la página.
+  updateTag(TAGS.menu);
   return ok();
 }
 
@@ -324,8 +371,11 @@ export async function deleteCategory(id: number): Promise<ActionResult> {
   const db = await getDb();
   const [{ n }] = await db.select({ n: sql<number>`count(*)::int` }).from(products).where(eq(products.categoryId, id));
   if (n > 0) return fail("Mové o eliminá sus productos antes de borrar la categoría.");
+  const [cat] = await db.select({ slug: categories.slug }).from(categories).where(eq(categories.id, id));
   await db.delete(categories).where(eq(categories.id, id));
-  done(TAGS.menu);
+  // Las publicaciones que llevaban a esta categoría pasan a llevar a la carta completa.
+  if (cat) await db.update(events).set({ ctaTarget: "carta" }).where(eq(events.ctaTarget, `cat:${cat.slug}`));
+  done(TAGS.menu, TAGS.events);
   return ok();
 }
 
@@ -336,7 +386,7 @@ const eventInput = z
     id: z.number().int().positive().optional(),
     type: z.enum(EVENT_TYPES),
     title: z.string().trim().min(1, "Poné un título").max(90),
-    description: z.string().trim().max(400),
+    description: z.string().trim().min(1, "Escribí una descripción").max(400),
     ctaLabel: z.string().trim().max(40),
     ctaTarget: z.string().regex(/^(ig|carta|reserva|cat:[a-z0-9-]+)$/),
     eventDate: isoDate.nullable(),
@@ -443,17 +493,16 @@ export async function savePlan(input: z.input<typeof planInput>): Promise<Action
 
 const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Usá el formato HH:MM");
 const settingsInput = z.object({
-  address: z.string().trim().min(3).max(120),
-  city: z.string().trim().min(2).max(120),
+  address: z.string().trim().min(3, "Escribí la dirección.").max(120, "La dirección es muy larga."),
+  city: z.string().trim().min(2, "Escribí la ciudad.").max(120, "La ciudad es muy larga."),
   whatsapp: z
     .string()
-    .transform((v) => v.replace(/\D/g, ""))
-    .refine((v) => v.length >= 10 && v.length <= 15, "El WhatsApp tiene que tener código de país y área (ej.: +54 9 3442 535419)."),
+    .transform(arPhoneDigits)
+    .refine(isArPhone, "Ingresá el celular completo: código de área y número (ej.: 3442 53-5419)."),
   instagram: z
     .string()
-    .trim()
-    .transform((v) => v.replace(/^@/, ""))
-    .refine((v) => /^[A-Za-z0-9._]{1,30}$/.test(v), "Usuario de Instagram inválido"),
+    .transform(instagramHandle)
+    .refine(isInstagramHandle, "Usuario de Instagram inválido: solo letras, números, puntos y guiones bajos."),
   hours: z
     .array(z.object({ day: z.number().int().min(0).max(6), closed: z.boolean(), from: hhmm, to: hhmm, ordersFrom: hhmm }))
     .length(7, "Falta algún día de la semana.")

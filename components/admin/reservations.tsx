@@ -11,7 +11,7 @@ import {
 } from "@/app/admin/actions";
 import type { AdminReservation } from "@/lib/admin-data";
 import { longDate, todayISO } from "@/lib/dates";
-import { cx, tablesLabel } from "@/lib/format";
+import { cx } from "@/lib/format";
 import { reservationConfirmMessage, reservationContactMessage, toWaNumber, waLink } from "@/lib/whatsapp";
 import { XMark } from "../XMark";
 import { AButton, abtn, Field, inputCls, Segmented, useRun } from "./ui";
@@ -38,8 +38,8 @@ export function useResActions(address: string) {
       window.open(waLink(toWaNumber(r.phone), reservationContactMessage({ name: r.name, date: r.date, time: r.time })), "_blank", "noopener"),
     reject: (r: AdminReservation) => act(() => run(setReservationStatus(r.id, "canc"), `Reserva de ${r.name} rechazada. La mesa vuelve a estar libre.`)),
     cancel: (r: AdminReservation) => act(() => run(setReservationStatus(r.id, "canc"), `Reserva de ${r.name} cancelada.`)),
-    restore: (r: AdminReservation) => act(() => run(setReservationStatus(r.id, "pend"), `Reserva de ${r.name} restaurada como pendiente.`)),
-    seat: (r: AdminReservation) => act(() => run(markArrived(r.id), `${r.name} llegó. ${tablesLabel(r.tables)} ocupada${r.tables.length > 1 ? "s" : ""}.`)),
+    restore: (r: AdminReservation) => act(() => run(setReservationStatus(r.id, "conf"), `Reserva de ${r.name} restaurada y confirmada.`)),
+    seat: (r: AdminReservation) => act(() => run(markArrived(r.id), `${r.name} llegó.`)),
     move: (r: AdminReservation, n: number) => act(() => run(changeReservationTable(r.id, n), `${r.name} pasó a la mesa ${n}.`)),
     walkin: (date: string, n: number, on: boolean) =>
       act(() => run(setWalkin(date, n, on), on ? `Mesa ${n} marcada como ocupada.` : `Mesa ${n} liberada.`)),

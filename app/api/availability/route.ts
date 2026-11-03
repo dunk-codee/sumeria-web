@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
   const { date, people } = parsed.data;
 
   const settings = await getSettings();
-  const status = bookingStatus(date, settings.booking);
+  const status = bookingStatus(date, settings.booking, new Date(), settings.hours);
   if (status === "out_of_range" || status === "blocked") {
     return Response.json({ error: BOOKING_ERRORS[status], code: status }, { status: 400, headers: { "Cache-Control": "no-store" } });
   }

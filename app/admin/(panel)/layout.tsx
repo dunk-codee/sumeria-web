@@ -4,7 +4,6 @@ import { LiveReservations } from "@/components/admin/LiveReservations";
 import { SidebarNav } from "@/components/admin/SidebarNav";
 import { ToastProvider } from "@/components/admin/ui";
 import { XLoader } from "@/components/XMark";
-import { pendingCount } from "@/lib/admin-data";
 import { requireAdmin } from "@/lib/auth";
 import { dbConfigured } from "@/lib/db";
 
@@ -15,8 +14,7 @@ export const metadata: Metadata = { title: { default: "Panel", template: "%s · 
 
 async function Sidebar() {
   const session = await requireAdmin();
-  const pending = await pendingCount();
-  return <SidebarNav email={session.email} pending={pending} />;
+  return <SidebarNav email={session.email} />;
 }
 
 /** Modo sin base: el panel no puede funcionar sin DATABASE_URL. */

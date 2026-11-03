@@ -9,5 +9,5 @@ export const metadata: Metadata = { title: "Calendario de reservas" };
 export default async function CalendarioAdmin() {
   await requireAdmin();
   const s = await adminSettings();
-  return <BookingCalendar initial={{ from: s.bookingFrom, to: s.bookingTo, blocked: s.blockedDates }} today={todayISO()} />;
+  return <BookingCalendar initial={{ from: s.bookingFrom, to: s.bookingTo, blocked: s.blockedDates }} today={todayISO()} week={s.hours} />;
 }

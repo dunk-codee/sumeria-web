@@ -61,7 +61,8 @@ export default {
       keyframes: {
         "x-spin": { "0%": { transform: "rotate(0)" }, "100%": { transform: "rotate(180deg)" } },
         "x-pulse": { "0%,100%": { opacity: ".35" }, "50%": { opacity: ".75" } },
-        "toast-in": { "0%": { opacity: "0", transform: "translate(-50%, 8px)" }, "100%": { opacity: "1", transform: "translate(-50%, 0)" } },
+        // Solo sube desde abajo: el centrado lo hace la clase `-translate-x-1/2` (en Tailwind 4 usa la propiedad `translate`, que se suma al `transform`).
+        "toast-in": { "0%": { opacity: "0", transform: "translateY(8px)" }, "100%": { opacity: "1", transform: "translateY(0)" } },
       },
       animation: {
         "x-spin": "x-spin .9s cubic-bezier(.6,0,.3,1) infinite",

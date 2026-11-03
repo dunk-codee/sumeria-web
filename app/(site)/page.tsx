@@ -3,10 +3,11 @@ import { FeaturedReveal } from "@/components/home/FeaturedReveal";
 import { Hero } from "@/components/home/Hero";
 import { Photo } from "@/components/Photo";
 import { button, ButtonLink, Eyebrow, ExternalButton, SectionTitle, typeTag, TYPE_LABELS } from "@/components/ui";
+import { FEATURED_MAX } from "@/lib/categories";
 import { getEvents, getMenu, getSettings } from "@/lib/data";
-import { ctaHref, eventDateParts, featuredEvent } from "@/lib/events";
+import { ctaHref, eventDateParts, eventRange, featuredEvent } from "@/lib/events";
 import { cx } from "@/lib/format";
-import { openFromText } from "@/lib/hours";
+import { openFromText, reservationFromText } from "@/lib/hours";
 import { SLATE_CARD } from "@/components/site/slate";
 import { GOOGLE_REVIEWS } from "@/lib/reviews";
 import { waLink } from "@/lib/whatsapp";
@@ -24,7 +25,7 @@ export default async function HomePage() {
   const [menu, events, settings] = await Promise.all([getMenu(), getEvents(), getSettings()]);
   const openText = openFromText(settings.hours);
   const feat = featuredEvent(events);
-  const stars = menu.filter((c) => c.featured && c.products.length > 0).slice(0, 6);
+  const stars = menu.filter((c) => c.featured && c.products.length > 0).slice(0, FEATURED_MAX);
 
   return (
     <>
@@ -44,13 +45,30 @@ export default async function HomePage() {
               <div className="flex flex-col gap-4 p-[clamp(24px,3.5vw,48px)]">
                 {(() => {
                   const d = eventDateParts(feat);
+                  const range = eventRange(feat);
                   return (
                     <div className="flex items-end gap-4">
-                      <div className="font-display text-[clamp(72px,8vw,104px)] leading-[.82] font-semibold">{d.day}</div>
+                      {range && !range.same ? (
+                        <div className="flex items-end gap-3 font-display leading-[.82] font-semibold" aria-label={`Del ${range.from.day} ${range.from.mon} al ${range.to.day} ${range.to.mon}`}>
+                          <span className="flex flex-col gap-1.5 text-[clamp(56px,6vw,80px)]">
+                            {range.from.day}
+                            <span className="text-xl tracking-[.2em]">{range.from.mon}</span>
+                          </span>
+                          <span aria-hidden className="pb-7 text-[clamp(28px,3vw,40px)]">–</span>
+                          <span className="flex flex-col gap-1.5 text-[clamp(56px,6vw,80px)]">
+                            {range.to.day}
+                            <span className="text-xl tracking-[.2em]">{range.to.mon}</span>
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="font-display text-[clamp(72px,8vw,104px)] leading-[.82] font-semibold">{d.day}</div>
+                      )}
                       <div className="flex flex-col gap-1.5 pb-1">
-                        <span className="font-display text-xl tracking-[.2em]">
-                          {d.mon} · {d.dow}
-                        </span>
+                        {!(range && !range.same) && (
+                          <span className="font-display text-xl tracking-[.2em]">
+                            {d.mon} · {d.dow}
+                          </span>
+                        )}
                         <span className={cx(typeTag({ type: feat.type }), "self-start")}>{TYPE_LABELS[feat.type]}</span>
                       </div>
                     </div>
@@ -204,7 +222,7 @@ export default async function HomePage() {
           </div>
           <h2 className="m-0 font-display text-[clamp(48px,8vw,112px)] leading-[.95] font-semibold text-balance uppercase">Reservá tu mesa</h2>
           <p className="m-0 max-w-[40ch] text-base leading-[1.55] text-pretty text-stone-2">
-            Reservás desde las 19:30.
+            {reservationFromText(settings.hours)}
           </p>
           <ButtonLink href="/reservas" variant="primary" className="mt-2">
             Reservar mesa <span aria-hidden>→</span>
