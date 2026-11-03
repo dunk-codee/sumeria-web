@@ -189,7 +189,7 @@ pará `npm run dev` antes de correr `db:seed` o `next build`. Para hacer el buil
   **Si agregás una lectura pública nueva, ponele tag; si agregás una mutación, expirá el tag.**
 - **Reservas**:
   - Estados: `pend` (pendiente) · `conf` (confirmada) · `canc` (cancelada) · `occ` (ocupada sin reserva / walk-in).
-  - **Turno único** (`lib/turns.ts`, `TURN`: 20:00 a 23:00). La columna `reservations.turn` se conserva y vale siempre 0; la
+  - **Turno único** (`lib/turns.ts`, `TURN`: "Desde las 19:30", sin horario límite; pedido del cliente). Aviso de **tolerancia de 30 minutos** (`TOLERANCE_MIN`) en el inicio, en el paso 1 y 3 de la reserva, en la confirmación y en el mensaje de WhatsApp. La columna `reservations.turn` se conserva y vale siempre 0; la
     disponibilidad mira solo la fecha (cuentan también las reservas viejas del segundo turno).
   - Una mesa está libre para una fecha si no tiene reserva `pend`/`conf`/`occ`.
   - Índice único parcial `(date, turn, table_n) WHERE status <> 'canc'` + chequeo previo en la transacción. `POST /api/reservations`

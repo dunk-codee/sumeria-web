@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { LiveReservations } from "@/components/admin/LiveReservations";
 import { SidebarNav } from "@/components/admin/SidebarNav";
 import { ToastProvider } from "@/components/admin/ui";
 import { XLoader } from "@/components/XMark";
@@ -38,6 +39,7 @@ export default function PanelLayout({ children }: LayoutProps<"/admin">) {
   if (!dbConfigured()) return <NoDatabase />;
   return (
     <ToastProvider>
+      <LiveReservations />
       <div className="flex min-h-dvh flex-col bg-panel-bg text-panel-text md:h-dvh md:flex-row md:overflow-hidden">
         <Suspense fallback={<aside className="md:w-59 md:flex-none md:border-r md:border-bone/8 md:bg-panel-surface" />}>
           <Sidebar />

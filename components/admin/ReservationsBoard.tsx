@@ -6,12 +6,13 @@ import type { AdminReservation } from "@/lib/admin-data";
 import { isApart } from "@/lib/combos";
 import type { PlanData } from "@/lib/data";
 import { DOW, longDate, parts } from "@/lib/dates";
+import { CheckIcon, WhatsAppIcon } from "@/components/icons";
 import { cx, tablesLabel } from "@/lib/format";
 import { TURN } from "@/lib/turns";
 import { FloorPlan, type PlanTable } from "../FloorPlan";
 import { XMark } from "../XMark";
-import { NewReservationButton, NewReservationDrawer, SOURCE_LABEL, useResActions } from "./reservations";
-import { AButton, Card, PANEL_TABLE, StatusTag } from "./ui";
+import { hasPhone, NewReservationButton, NewReservationDrawer, SOURCE_LABEL, useResActions } from "./reservations";
+import { AButton, ArrivedTag, Card, PANEL_TABLE, StatusTag } from "./ui";
 import { PANEL_CHAIR } from "./styles";
 
 type Props = {
@@ -197,9 +198,15 @@ export function ReservationsBoard({ date, view, days, today, week, plan, address
                     <span className="text-[12.5px] text-sand">{SOURCE_LABEL[r.source]}</span>
                     <span className="flex flex-col items-start gap-1">
                       <StatusTag status={r.status} />
-                      {r.arrived && <span className="font-mono text-[10px] text-panel-muted uppercase">Llegaron</span>}
+                      {r.arrived && <ArrivedTag />}
                     </span>
                     <div className="flex flex-wrap gap-1.5">
+                      {hasPhone(r) && (
+                        <AButton variant="whatsapp" size="xs" onClick={() => a.message(r)} aria-label={`Enviar mensaje por WhatsApp a ${r.name}`}>
+                          <WhatsAppIcon size={14} />
+                          Enviar mensaje
+                        </AButton>
+                      )}
                       {r.status === "pend" && (
                         <>
                           <AButton variant="primary" size="sm" disabled={a.pending} onClick={() => a.confirm(r)}>
@@ -212,11 +219,12 @@ export function ReservationsBoard({ date, view, days, today, week, plan, address
                       )}
                       {r.status === "conf" && (
                         <>
-                          <AButton size="xs" disabled={a.pending} onClick={() => a.cancel(r)}>
+                          <AButton variant="cancel" size="xs" disabled={a.pending} onClick={() => a.cancel(r)}>
                             Cancelar
                           </AButton>
                           {!r.arrived && (
-                            <AButton size="xs" disabled={a.pending} onClick={() => a.seat(r)}>
+                            <AButton variant="arrived" size="xs" disabled={a.pending} onClick={() => a.seat(r)}>
+                              <CheckIcon size={13} />
                               Llegaron
                             </AButton>
                           )}
@@ -302,6 +310,12 @@ export function ReservationsBoard({ date, view, days, today, week, plan, address
                         </>
                       )}
                     </dl>
+                    {hasPhone(selR) && (
+                      <AButton variant="whatsapp" onClick={() => a.message(selR)}>
+                        <WhatsAppIcon size={16} />
+                        Enviar mensaje
+                      </AButton>
+                    )}
                     {selR.status === "pend" && (
                       <>
                         <AButton variant="primary" disabled={a.pending} onClick={() => a.confirm(selR)}>
@@ -315,11 +329,12 @@ export function ReservationsBoard({ date, view, days, today, week, plan, address
                     {selR.status === "conf" && (
                       <>
                         {!selR.arrived && (
-                          <AButton disabled={a.pending} onClick={() => a.seat(selR)}>
+                          <AButton variant="arrived" disabled={a.pending} onClick={() => a.seat(selR)}>
+                            <CheckIcon size={15} />
                             Llegaron · marcar ocupada
                           </AButton>
                         )}
-                        <AButton disabled={a.pending} onClick={() => a.cancel(selR)}>
+                        <AButton variant="cancel" disabled={a.pending} onClick={() => a.cancel(selR)}>
                           Cancelar reserva
                         </AButton>
                       </>

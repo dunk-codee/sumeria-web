@@ -11,6 +11,12 @@ export const abtn = cva("inline-flex items-center justify-center gap-1.5 rounded
       light: "bg-panel-text text-panel-bg hover:bg-white hover:text-panel-bg",
       link: "text-panel-muted underline hover:text-panel-text",
       danger: "text-sumeria-light underline hover:text-sumeria-light",
+      /** Enviar mensaje por WhatsApp: verde, con el ícono. */
+      whatsapp: "bg-ok text-ink hover:bg-white hover:text-ink",
+      /** Cancelar: rojo. */
+      cancel: "border border-sumeria bg-sumeria/15 text-sumeria-light hover:bg-sumeria-dark hover:text-white",
+      /** Llegaron: color kraft con tick. */
+      arrived: "border border-kraft text-kraft hover:bg-kraft hover:text-ink",
     },
     size: {
       md: "h-10 px-4 text-sm",

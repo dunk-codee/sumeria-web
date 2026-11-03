@@ -9,7 +9,6 @@ import { cx } from "@/lib/format";
 import { openFromText } from "@/lib/hours";
 import { SLATE_CARD } from "@/components/site/slate";
 import { GOOGLE_REVIEWS } from "@/lib/reviews";
-import { TURN } from "@/lib/turns";
 import { waLink } from "@/lib/whatsapp";
 
 /** Estrellas de una reseña: decorativas salvo que se pase `label`. */
@@ -205,7 +204,7 @@ export default async function HomePage() {
           </div>
           <h2 className="m-0 font-display text-[clamp(48px,8vw,112px)] leading-[.95] font-semibold text-balance uppercase">Reservá tu mesa</h2>
           <p className="m-0 max-w-[40ch] text-base leading-[1.55] text-pretty text-stone-2">
-            Turno único de {TURN.range}. Tu mesa queda guardada durante todo el servicio.
+            Reservás desde las 19:30.
           </p>
           <ButtonLink href="/reservas" variant="primary" className="mt-2">
             Reservar mesa <span aria-hidden>→</span>
