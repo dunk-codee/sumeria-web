@@ -7,8 +7,19 @@ import { getEvents, getMenu, getSettings } from "@/lib/data";
 import { ctaHref, eventDateParts, featuredEvent } from "@/lib/events";
 import { cx } from "@/lib/format";
 import { hoursOf } from "@/lib/hours";
-import { placeholderBg } from "@/lib/placeholders";
 import { SLATE_CARD } from "@/components/site/slate";
+import { GOOGLE_REVIEWS } from "@/lib/reviews";
+import { TURN } from "@/lib/turns";
+import { waLink } from "@/lib/whatsapp";
+
+/** Estrellas de una reseña: decorativas salvo que se pase `label`. */
+function Stars({ count, label }: { count: number; label?: string }) {
+  return (
+    <span role={label ? "img" : undefined} aria-label={label} aria-hidden={label ? undefined : true} className="text-base tracking-widest text-sumeria">
+      {"★".repeat(count)}
+    </span>
+  );
+}
 
 /** Estado inicial de lo que aparece al scrollear (lo anima `FeaturedReveal`). */
 const HIDDEN = "opacity-0 motion-reduce:opacity-100!";
@@ -18,7 +29,6 @@ export default async function HomePage() {
   const salon = hoursOf(settings, "salon");
   const feat = featuredEvent(events);
   const stars = menu.filter((c) => c.featured && c.products.length > 0).slice(0, 6);
-  const ig = `https://instagram.com/${settings.instagram}`;
 
   return (
     <>
@@ -142,74 +152,111 @@ export default async function HomePage() {
       )}
 
       {/* Delivery & take away */}
-      <section className="mt-[clamp(56px,7vw,112px)] bg-kraft-bag text-kraft-ink">
-        <div className="mx-auto grid max-w-7xl grid-cols-[repeat(auto-fit,minmax(min(100%,360px),1fr))] items-center gap-[clamp(24px,4vw,56px)] px-gutter py-[clamp(40px,6vw,88px)]">
-          <div className="flex flex-col gap-4">
-            <Eyebrow tone="kraft">Delivery &amp; take away</Eyebrow>
-            <h2 className="m-0 font-display text-[clamp(38px,5vw,72px)] leading-[.95] font-semibold text-balance uppercase">Te lo llevamos o pasás a buscarlo</h2>
-            <p className="m-0 max-w-[44ch] text-base leading-[1.55]">
+      <section className="mt-[clamp(56px,7vw,112px)] bg-coal">
+        <div className="mx-auto grid max-w-7xl grid-cols-[repeat(auto-fit,minmax(min(100%,360px),1fr))] items-center gap-[clamp(32px,5vw,72px)] px-gutter py-[clamp(48px,7vw,112px)]">
+          <div className="flex flex-col gap-5">
+            <Eyebrow>Delivery &amp; take away</Eyebrow>
+            <h2 className="m-0 font-display text-[clamp(44px,6vw,88px)] leading-[.95] font-semibold text-balance uppercase">
+              Te lo llevamos o pasás a buscarlo
+            </h2>
+            <p className="m-0 max-w-[44ch] text-base leading-[1.55] text-pretty text-stone-2">
               Armá tu pedido acá y te llega por WhatsApp listo para confirmar. Sale en caja SUMERIA, como siempre.
             </p>
-            <ButtonLink href="/carta" variant="onKraft" className="mt-1.5 self-start">
-              Armá tu pedido
-            </ButtonLink>
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-6 gap-y-3">
+              <ButtonLink href="/carta" variant="primary">
+                Armá tu pedido <span aria-hidden>→</span>
+              </ButtonLink>
+              <ExternalButton href={waLink(settings.whatsapp)} variant="text" size="md">
+                WhatsApp <span aria-hidden>→</span>
+              </ExternalButton>
+            </div>
+            <dl className="m-0 mt-4 flex max-w-md border-t border-bone/12 pt-5">
+              <div className="flex flex-1 flex-col gap-1.5 pr-6">
+                <dt className="font-mono text-[11px] tracking-[.2em] text-stone-4 uppercase">Horario</dt>
+                <dd className="m-0 text-[15px] text-bone">Todos los días desde las {salon.from}</dd>
+              </div>
+              <div className="flex flex-1 flex-col gap-1.5 border-l border-bone/12 pl-6">
+                <dt className="font-mono text-[11px] tracking-[.2em] text-stone-4 uppercase">Retiro</dt>
+                <dd className="m-0 text-[15px] text-bone">{settings.address}</dd>
+              </div>
+            </dl>
           </div>
-          <div className="grid grid-cols-2 gap-2.5" aria-hidden>
-            <div
-              className="aspect-3/4 rounded-xs"
-              style={{
-                background:
-                  "repeating-linear-gradient(135deg,rgba(33,23,14,.06) 0 1px,transparent 1px 8px),radial-gradient(90% 80% at 50% 40%,#E3CCA6 0%,#A27A4C 70%,#6E4E2E 100%)",
-              }}
-            />
-            <div
-              className="mt-10 aspect-3/4 rounded-xs"
-              style={{
-                background:
-                  "repeating-linear-gradient(135deg,rgba(255,255,255,.03) 0 1px,transparent 1px 8px),radial-gradient(80% 70% at 50% 45%,rgba(140,84,44,.6) 0%,#1A120C 80%)",
-              }}
-            />
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            {[
+              { kicker: "Te lo llevamos", title: "Delivery", offset: "" },
+              { kicker: "Pasás a buscarlo", title: "Take away", offset: "mt-12 d:mt-20" },
+            ].map((c) => (
+              <div key={c.title} className={cx("relative flex aspect-3/4 flex-col items-center justify-end gap-2 px-3 pb-6 text-center", SLATE_CARD, c.offset)}>
+                <span className="font-display text-xs tracking-[.28em] text-sumeria uppercase">{c.kicker}</span>
+                <span className="font-display text-[clamp(26px,3vw,40px)] leading-none font-semibold text-bone uppercase">{c.title}</span>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Ustedes */}
-      <section className="px-gutter py-section">
+      {/* Reservas */}
+      <section className="relative overflow-hidden px-gutter py-[clamp(64px,9vw,144px)]">
+        <span
+          aria-hidden
+          className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 font-display text-[clamp(200px,38vw,560px)] leading-none font-bold text-transparent uppercase select-none [-webkit-text-stroke:1px_rgb(245_243_238/.07)]"
+        >
+          Mesa
+        </span>
+        <div className="relative mx-auto flex max-w-3xl flex-col items-center gap-5 text-center">
+          <Eyebrow>Reservas</Eyebrow>
+          <h2 className="m-0 font-display text-[clamp(48px,8vw,112px)] leading-[.95] font-semibold text-balance uppercase">Reservá tu mesa</h2>
+          <p className="m-0 max-w-[40ch] text-base leading-[1.55] text-pretty text-stone-2">
+            Turno único de {TURN.range}. Tu mesa queda guardada durante todo el servicio.
+          </p>
+          <ButtonLink href="/reservas" variant="primary" className="mt-2 shadow-[0_10px_40px_rgb(215_91_75/.3)]">
+            Reservar mesa <span aria-hidden>→</span>
+          </ButtonLink>
+        </div>
+      </section>
+
+      {/* Ustedes: reseñas de Google Maps */}
+      <section className="py-section">
         <div className="mx-auto flex max-w-7xl flex-col gap-[clamp(24px,3vw,36px)]">
-          <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="flex flex-wrap items-end justify-between gap-4 px-gutter">
             <div className="flex flex-col gap-2.5">
               <Eyebrow>Ustedes</Eyebrow>
               <SectionTitle>Así lo disfrutan</SectionTitle>
-              <p className="m-0 max-w-[52ch] text-[15px] leading-normal text-stone-2">
-                Las fotos que comparten en Instagram. Etiquetanos en{" "}
-                <a href={ig} target="_blank" rel="noopener noreferrer" className="underline">
-                  @{settings.instagram}
-                </a>{" "}
-                y aparecés acá.
+              <p className="m-0 flex flex-wrap items-center gap-x-2 text-[15px] leading-normal text-stone-2">
+                <span className="font-display text-xl font-semibold text-bone">{String(GOOGLE_REVIEWS.rating).replace(".", ",")}</span>
+                <Stars count={5} />
+                <span>· {GOOGLE_REVIEWS.count} opiniones en Google</span>
               </p>
             </div>
             <a
-              href={ig}
+              href={GOOGLE_REVIEWS.mapsUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-xs border border-bone/35 px-4.5 py-3 font-display text-sm tracking-widest uppercase"
+              className="rounded-full border border-bone/35 px-5 py-3 font-display text-sm tracking-widest uppercase"
             >
-              Ver el perfil
+              Ver todas en Google Maps
             </a>
           </div>
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(max(100px,15%),1fr))] gap-1.5">
-            {(["madera", "pizarra", "kraft", "negro", "makisu", "madera"] as const).map((ph, i) => (
-              <a
-                key={i}
-                href={ig}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={`Foto ${i + 1} de clientes en Instagram`}
-                className="block aspect-square rounded-xs"
-                style={{ backgroundImage: placeholderBg(ph) }}
-              />
-            ))}
+          {/* Carrusel: se desplaza solo y se frena al pasar el mouse o al enfocar; con `prefers-reduced-motion` se desliza con el dedo. */}
+          <div className="group no-scrollbar overflow-x-auto mask-[linear-gradient(to_right,transparent,#000_6%,#000_94%,transparent)] motion-safe:overflow-hidden">
+            <div className="flex w-max motion-safe:animate-marquee motion-safe:group-focus-within:[animation-play-state:paused] motion-safe:group-hover:[animation-play-state:paused]">
+              {[0, 1].map((copy) => (
+                <ul key={copy} aria-hidden={copy === 1 || undefined} className="m-0 flex shrink-0 list-none gap-4 p-0 pr-4">
+                  {GOOGLE_REVIEWS.items.map((r) => (
+                    <li
+                      key={r.author}
+                      className="flex w-[300px] flex-col gap-4 rounded-3xl border border-bone/20 bg-bone/8 p-6 shadow-[inset_0_1px_0_rgb(255_255_255/.14),0_12px_40px_rgb(0_0_0/.35)] backdrop-blur-xl sm:w-[360px]"
+                    >
+                      <Stars count={r.stars} label={`${r.stars} de 5 estrellas`} />
+                      <blockquote className="m-0 text-[15px] leading-[1.6] text-pretty text-bone">“{r.text}”</blockquote>
+                      <span className="mt-auto font-display text-sm tracking-widest text-stone-2 uppercase">{r.author}</span>
+                    </li>
+                  ))}
+                </ul>
+              ))}
+            </div>
           </div>
+          <span className="px-gutter font-mono text-[10.5px] tracking-wider text-stone-4 uppercase">Reseñas de Google Maps</span>
         </div>
       </section>
     </>
