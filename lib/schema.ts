@@ -71,9 +71,9 @@ export const settings = pgTable("settings", {
   city: text("city").notNull(),
   instagram: text("instagram").notNull(),
   hours: jsonb("hours").$type<DayHours[]>().notNull(),
-  /** Primer día reservable desde el sitio (ISO). Sin valor: desde hoy. */
+  /** Día en que se guardó el rango reservable (ISO): con `bookingTo` define cuántos días hacia adelante se reserva (rango móvil). */
   bookingFrom: date("booking_from", { mode: "string" }),
-  /** Último día reservable desde el sitio (ISO). Sin valor: hoy + 7 días. */
+  /** Último día del rango al guardarlo; `bookingTo - bookingFrom` = días de anticipación. Sin valor: hoy + 7 días. */
   bookingTo: date("booking_to", { mode: "string" }),
   /** Días puntuales sin reservas online dentro del rango (feriados, cierres). */
   blockedDates: jsonb("blocked_dates").$type<string[]>().notNull().default([]),

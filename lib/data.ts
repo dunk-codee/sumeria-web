@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, lte } from "drizzle-orm";
+import { and, asc, eq, gte, isNull, lte, or } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 import { DEFAULT_BOOKING, type BookingConfig } from "./booking";
 import { todayISO } from "./dates";
@@ -118,7 +118,7 @@ export type PublicEvent = {
   photoUrl: string | null;
 };
 
-/** Eventos visibles hoy (entre publicación y vencimiento). Se recalcula cada hora. */
+/** Eventos visibles hoy (entre publicación y vencimiento, sin los que ya terminaron). Se recalcula cada hora. */
 export async function getEvents(): Promise<PublicEvent[]> {
   "use cache";
   cacheLife("hours");
@@ -129,7 +129,8 @@ export async function getEvents(): Promise<PublicEvent[]> {
   const rows = await db
     .select()
     .from(events)
-    .where(and(lte(events.publishedAt, today), gte(events.expiresAt, today)))
+    // Visibles entre la publicación y el vencimiento, y mientras no haya pasado su fecha destacada (un evento que ya fue, no se muestra).
+    .where(and(lte(events.publishedAt, today), gte(events.expiresAt, today), or(isNull(events.eventDate), gte(events.eventDate, today))))
     .orderBy(asc(events.expiresAt));
   return rows.map((e) => ({ ...e }));
 }

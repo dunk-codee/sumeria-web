@@ -2,7 +2,7 @@ import { and, asc, eq, gte, inArray, lte, ne, sql } from "drizzle-orm";
 import { addDays, todayISO } from "./dates";
 import { getDb } from "./db";
 import { DEFAULT_SETTINGS } from "./defaults";
-import { weekOf } from "./hours";
+import { reservationTime, weekOf } from "./hours";
 import { categories, deliveryZones, events, fixtures, products, reservations, settings, tables } from "./schema";
 
 /** Lecturas del panel: siempre frescas (sin caché). */
@@ -59,15 +59,6 @@ function collapse(rows: ResRow[]): AdminReservation[] {
   return out;
 }
 
-export async function pendingCount(): Promise<number> {
-  const db = await getDb();
-  const [{ n }] = await db
-    .select({ n: sql<number>`count(distinct coalesce(${reservations.groupId}, ${reservations.id}::text))::int` })
-    .from(reservations)
-    .where(and(eq(reservations.status, "pend"), gte(reservations.date, todayISO())));
-  return n;
-}
-
 /** Reservas (incluye ocupadas sin reserva) entre dos fechas. */
 export async function reservationsBetween(from: string, to: string): Promise<AdminReservation[]> {
   const db = await getDb();
@@ -76,17 +67,10 @@ export async function reservationsBetween(from: string, to: string): Promise<Adm
     .from(reservations)
     .where(and(gte(reservations.date, from), lte(reservations.date, to)))
     .orderBy(asc(reservations.date), asc(reservations.time), asc(reservations.id));
-  return collapse(rows);
-}
-
-export async function pendingFrom(from: string): Promise<AdminReservation[]> {
-  const db = await getDb();
-  const rows = await db
-    .select(resCols)
-    .from(reservations)
-    .where(and(eq(reservations.status, "pend"), gte(reservations.date, from)))
-    .orderBy(asc(reservations.date), asc(reservations.time), asc(reservations.id));
-  return collapse(rows);
+  // El turno es único: la hora es la de apertura de ese día, aunque la reserva se haya guardado con otra (horarios viejos).
+  const [cfg] = await db.select({ hours: settings.hours }).from(settings).where(eq(settings.id, 1));
+  const week = weekOf(cfg?.hours);
+  return collapse(rows).map((r) => ({ ...r, time: reservationTime(week, r.date) }));
 }
 
 export async function planTables() {

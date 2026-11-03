@@ -21,7 +21,7 @@ export default async function ReservasPage() {
           <PageTitle>Reservá tu mesa</PageTitle>
         </div>
         {dbConfigured() ? (
-          <Reservation plan={plan} whatsapp={settings.whatsapp} booking={settings.booking} />
+          <Reservation plan={plan} whatsapp={settings.whatsapp} booking={settings.booking} week={settings.hours} />
         ) : (
           // Modo sin base: las reservas online se activan al conectar la base de datos.
           <div className="flex max-w-155 flex-col gap-4 rounded-xs border border-bone/14 bg-coal p-[clamp(22px,3vw,36px)]">

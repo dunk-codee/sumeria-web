@@ -114,7 +114,7 @@ app/
     actions.ts               TODAS las Server Actions del panel (login, reservas, productos, categorías, eventos, plano, local)
     login/                   ingreso
     (panel)/                 shell con sidebar + loading.tsx
-      page.tsx               inicio (stats, pendientes, reservas de hoy)
+      page.tsx               inicio (stats, reservas de hoy y de mañana)
       reservas/ productos/ productos/[id]/ (id = "nuevo" para crear) categorias/ eventos/ plano/ local/
   api/
     menu/ events/            GET públicos (cacheados)
@@ -135,7 +135,9 @@ lib/
   auth.ts  session.ts        sesión del panel (session.ts sin dependencias de Node: lo usa proxy.ts)
   whatsapp.ts                mensaje del pedido, mensaje de confirmación de reserva, wa.me
   dates.ts                   fechas en hora argentina (ISO "YYYY-MM-DD")
-  turns.ts                   turnos de reserva y límites
+  turns.ts                   turno de reserva (respaldo), tolerancia y límites
+  contact.ts                 WhatsApp argentino (+54 9…), Instagram, horas HH:MM
+  categories.ts              tope de categorías en el inicio y largo del nombre
   validation.ts  plan.ts  placeholders.ts  format.ts  hours.ts  events.ts  defaults.ts  cloudinary.ts
 proxy.ts                     protege /admin y /api/admin
 drizzle/                     migraciones SQL generadas
@@ -189,7 +191,8 @@ pará `npm run dev` antes de correr `db:seed` o `next build`. Para hacer el buil
   **Si agregás una lectura pública nueva, ponele tag; si agregás una mutación, expirá el tag.**
 - **Reservas**:
   - Estados: `pend` (pendiente) · `conf` (confirmada) · `canc` (cancelada) · `occ` (ocupada sin reserva / walk-in).
-  - **Turno único** (`lib/turns.ts`, `TURN`: "Desde las 19:30", sin horario límite; pedido del cliente). Aviso de **tolerancia de 30 minutos** (`TOLERANCE_MIN`) en el inicio, en el paso 1 y 3 de la reserva, en la confirmación y en el mensaje de WhatsApp. La columna `reservations.turn` se conserva y vale siempre 0; la
+  - **Turno único** sin horario límite (pedido del cliente): la hora es **la de apertura de ese día** (`reservationTime` en `lib/hours.ts`: domingos 20:00,
+    el resto 19:30 por defecto). `TURN` en `lib/turns.ts` queda de respaldo. El panel muestra siempre la hora del día, aunque la reserva se haya guardado con otra. Aviso de **tolerancia de 30 minutos** (`TOLERANCE_MIN`) en el inicio, en el paso 1 y 3 de la reserva, en la confirmación y en el mensaje de WhatsApp. La columna `reservations.turn` se conserva y vale siempre 0; la
     disponibilidad mira solo la fecha (cuentan también las reservas viejas del segundo turno).
   - Una mesa está libre para una fecha si no tiene reserva `pend`/`conf`/`occ`.
   - Índice único parcial `(date, turn, table_n) WHERE status <> 'canc'` + chequeo previo en la transacción. `POST /api/reservations`
@@ -237,8 +240,11 @@ pará `npm run dev` antes de correr `db:seed` o `next build`. Para hacer el buil
        con el ancla (alternativa por teclado/lector).
     3. **Tus datos**.
     En los pasos 2 y 3 hay una **flecha "Volver"** (`BackButton`) además de los links "Cambiar" / "Cambiar mesa".
-  - **Días reservables**: `settings.booking_from/booking_to/blocked_dates` (panel → Calendario de reservas). Sin rango: hoy → hoy + 7.
-    Regla pura en `lib/booking.ts` (`bookingStatus`). **Corte del mismo día a las 19:30** (`SAME_DAY_CUTOFF`): la web lo muestra con
+  - **Días reservables**: **rango móvil** (pedido del cliente): el panel (Calendario de reservas) guarda cuántos días hacia adelante se reserva
+    y el rango siempre es hoy → hoy + N, así se renueva solo cada día. Se guarda como `settings.booking_from` (día de guardado) y `booking_to`
+    (guardado + N): solo importa la diferencia (`bookingAhead` en `lib/booking.ts`). Sin valor: hoy → hoy + 7. `blocked_dates` son días puntuales
+    cerrados; los días de la semana cerrados en *Datos del local* también se bloquean. Regla pura en `lib/booking.ts` (`bookingStatus`).
+    **Corte del mismo día = hora de apertura de ese día** (`isPastCutoff`; 19:30 si no se conoce el horario): la web lo muestra con
     botón a WhatsApp y `POST /api/reservations` responde 422 `code: "cutoff"`.
   - **Las reservas web entran ya `conf`** (pedido del cliente: sin pendientes). Al enviar, la web redirige al cliente a `wa.me/<whatsapp del local>`
     con el mensaje listo (`reservationRequestMessage` en `lib/whatsapp.ts`) y deja en pantalla la confirmación con botón "Abrir WhatsApp".
@@ -295,9 +301,13 @@ pará `npm run dev` antes de correr `db:seed` o `next build`. Para hacer el buil
   (`snap-x`) y borde derecho desvanecido hasta llegar al final (`data-end`). (Se probó un amague de las tarjetas hacia la
   izquierda y se sacó.)
 - **Nosotros** (`app/(site)/nosotros/page.tsx`): Dónde (mapa), Horarios y Escribinos (botones con ícono + solo el número de
-  WhatsApp (`waDisplay`: `+54 9 3442 53-5419`, también en *Reservas*) / solo el @usuario de Instagram; el `aria-label` dice la red). **Sin zonas de delivery**. Horarios por día desde `WEEK_HOURS` (`lib/hours.ts`, pedido del cliente): lunes a jueves
-  19:30–23:00, viernes y sábados 19:30–23:30, domingos 20:00–23:00. **Están en el código, no en el panel**: `settings.hours`
-  solo guarda un desde/hasta por tipo, sin días (el hero, el footer y el menú mobile siguen leyendo `salon.from` de ahí).
+  WhatsApp (`waDisplay`: `+54 9 3442 53-5419`, también en *Reservas*) / solo el @usuario de Instagram; el `aria-label` dice la red). **Sin zonas de delivery**.
+- **Horarios por día** (`settings.hours`, jsonb de 7 `DayHours`: `day` 0=domingo, `closed`, `from` abre, `to` cierra, `ordersFrom` pedidos desde): se editan en
+  *Datos del local*. Los lee Nosotros (`groupedWeek`: "Lunes a jueves", "Viernes y sábados"…), el inicio/pie/menú (`openFromText`: "Todos los días desde las
+  19:30" o "Desde las 19:30; domingos desde las 20:00"), la carta (`ordersFromText`), las reservas (hora y corte del día) y el bloqueo de pedidos. `weekOf`
+  (`lib/hours.ts`) acepta también el formato viejo (salón/pedidos/reservas) sin migración.
+- **Pedidos fuera de hora**: `SiteProvider` calcula `ordersBlock` en el navegador (hora argentina, cada 30 s; la página está en caché): antes de `ordersFrom` del
+  día, o con el día cerrado, la carta muestra un cartel (`OrdersNotice`) y el botón de enviar del carrito queda deshabilitado con el mismo mensaje. Es solo del lado del cliente.
 - **Footer** (en `app/(site)/layout.tsx`): logo + dirección y horario; columnas **Secciones** (las de la nav, de `NAV` en
   `components/site/nav.ts`, compartido con el header: un archivo `"use client"` no puede pasarle constantes al servidor) y
   **Contacto** (WhatsApp e Instagram con íconos de trazo de `components/icons.tsx`). Abajo: "© Sumeria Sushi 2026 · Diseñada por
@@ -352,6 +362,18 @@ pará `npm run dev` antes de correr `db:seed` o `next build`. Para hacer el buil
   La distribución actual es una propuesta: se ajusta desde *Plano del local*.
 
 ---
+
+### Panel (convenciones que se acordaron)
+
+- **Avisos de formulario debajo del campo** (`Field` con `error`), no en cartel; el cartel (toast) queda para el resultado de una acción. Confirmaciones con `ConfirmModal`
+  (no `window.confirm`). Fechas con `DateField` (día/mes/año; el `<input type="date">` nativo usa el formato del navegador) y horas con `TimeField`.
+- **Orden por arrastre** (ícono ≡, `Reorder` de framer-motion) en productos (dentro de su categoría) y en categorías; guardan con `updateTag` sin `refresh()`.
+  Con Cache Components el panel conserva la pantalla al navegar: los filtros que llegan por la URL se resincronizan en el cliente.
+- **Tailwind 4**: `translate-*`/`rotate-*` usan las propiedades CSS `translate`/`rotate`, que se **suman** al `transform` de los keyframes: no repetir el centrado en la animación.
+- El panel se **actualiza solo** (`LiveReservations`): consulta `/api/admin/reservations-stamp` cada 10 s y refresca si cambió; avisa si entró una reserva nueva.
+- Reservas web entran `conf`; el panel ya no tiene "pendientes" (sin insignia ni lista), aunque el estado `pend` sigue existiendo para datos viejos.
+- Eventos: una publicación **termina** al vencer o al pasar su fecha destacada (`eventEnded`); desaparece del sitio y en el panel figura "Terminado". Sin fecha destacada,
+  la tarjeta muestra comienzo – fin. Renombrar/borrar una categoría actualiza el destino (`cat:slug`) de las publicaciones que apuntaban a ella.
 
 ## 7. Estado actual
 

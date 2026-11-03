@@ -2,9 +2,10 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { saveBooking } from "@/app/admin/actions";
-import { bookingRange, DEFAULT_AHEAD_DAYS, MAX_BOOKING_SPAN, type BookingConfig } from "@/lib/booking";
-import { addDays, longDate, MON_LONG, parts } from "@/lib/dates";
+import { bookingAhead, DEFAULT_AHEAD_DAYS, MAX_BOOKING_SPAN, type BookingConfig } from "@/lib/booking";
+import { addDays, longDate, MON_LONG, parseISO, parts } from "@/lib/dates";
 import { cx } from "@/lib/format";
+import type { DayHours } from "@/lib/schema";
 import { AButton, Card, PageHead, Segmented, useRun, useToast } from "./ui";
 
 const WEEK = ["LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB", "DOM"];
@@ -13,22 +14,26 @@ const iso = (y: number, m: number, d: number) => `${y}-${pad(m + 1)}-${pad(d)}`;
 
 type Mode = "range" | "block";
 
-/** Calendario donde el local define desde/hasta qué día se reserva por la web y qué días cierra. */
-export function BookingCalendar({ initial, today }: { initial: BookingConfig; today: string }) {
+/**
+ * Calendario donde el local define hasta qué día se reserva por la web y qué días cierra.
+ * El rango es móvil: siempre arranca hoy y llega hasta hoy + N días, así que se renueva solo cada día.
+ */
+export function BookingCalendar({ initial, today, week }: { initial: BookingConfig; today: string; week: DayHours[] }) {
   const run = useRun();
   const flash = useToast();
   const [saving, start] = useTransition();
   const [mode, setMode] = useState<Mode>("range");
-  const [from, setFrom] = useState<string | null>(initial.from);
-  const [to, setTo] = useState<string | null>(initial.to);
-  // Mientras se elige el rango: primer click fijado, esperando el segundo.
-  const [anchor, setAnchor] = useState<string | null>(null);
+  /** Días hacia adelante (null: valor por defecto). */
+  const [ahead, setAhead] = useState<number | null>(initial.from && initial.to ? bookingAhead(initial) : null);
   const [blocked, setBlocked] = useState<string[]>(initial.blocked);
   const t = parts(today);
   const [cursor, setCursor] = useState({ y: t.year, m: t.month });
 
-  const effective = useMemo(() => bookingRange({ from, to, blocked }, today), [from, to, blocked, today]);
-  const usingDefault = from === null && to === null;
+  const days = ahead ?? DEFAULT_AHEAD_DAYS;
+  const effective = useMemo(() => ({ from: today, to: addDays(today, days) }), [today, days]);
+  const usingDefault = ahead === null;
+  const closedWeekday = (d: string) => !!week.find((x) => x.day === parts(d).dow)?.closed;
+  const diff = (a: string, b: string) => Math.round((parseISO(b).getTime() - parseISO(a).getTime()) / 86_400_000);
 
   const click = (d: string) => {
     if (d < today) return;
@@ -40,25 +45,17 @@ export function BookingCalendar({ initial, today }: { initial: BookingConfig; to
       setBlocked((b) => (b.includes(d) ? b.filter((x) => x !== d) : [...b, d].sort()));
       return;
     }
-    if (!anchor) {
-      setAnchor(d);
-      setFrom(d);
-      setTo(d);
+    // Un solo toque: ese es el último día reservable de hoy; mañana el rango se corre un día solo.
+    if (diff(today, d) > MAX_BOOKING_SPAN - 1) {
+      flash(`Se puede reservar hasta ${MAX_BOOKING_SPAN - 1} días hacia adelante.`, "error");
       return;
     }
-    const [a, b] = anchor <= d ? [anchor, d] : [d, anchor];
-    if (b > addDays(a, MAX_BOOKING_SPAN - 1)) {
-      flash(`El rango puede abarcar hasta ${MAX_BOOKING_SPAN} días.`, "error");
-      return;
-    }
-    setFrom(a);
-    setTo(b);
-    setAnchor(null);
+    setAhead(diff(today, d));
   };
 
   const save = () =>
     start(async () => {
-      await run(saveBooking({ from, to, blocked }), "Calendario guardado. El sitio ya usa estos días.");
+      await run(saveBooking({ ahead, blocked }), "Calendario guardado. El sitio ya usa estos días.");
     });
 
   const move = (delta: number) =>
@@ -89,14 +86,15 @@ export function BookingCalendar({ initial, today }: { initial: BookingConfig; to
             if (!d) return <span key={`e${i}`} />;
             const past = d < today;
             const inRange = !past && d >= effective.from && d <= effective.to;
-            const isBlocked = blocked.includes(d);
+            const closedDay = closedWeekday(d);
+            const isBlocked = blocked.includes(d) || (closedDay && inRange);
             const edge = d === effective.from ? "Primer día" : d === effective.to ? "Último día" : null;
-            const label = `${longDate(d)}${edge ? `, ${edge.toLowerCase()} reservable` : inRange ? ", reservable" : ""}${isBlocked ? ", cerrado" : ""}`;
+            const label = `${longDate(d)}${edge ? `, ${edge.toLowerCase()} reservable` : inRange ? ", reservable" : ""}${closedDay ? ", cerrado por horario" : isBlocked ? ", cerrado" : ""}`;
             return (
               <button
                 key={d}
                 type="button"
-                disabled={past}
+                disabled={past || (closedDay && mode === "block")}
                 aria-label={label}
                 aria-pressed={mode === "block" ? isBlocked : inRange}
                 onClick={() => click(d)}
@@ -129,28 +127,15 @@ export function BookingCalendar({ initial, today }: { initial: BookingConfig; to
       </PageHead>
       <div className="flex max-w-250 flex-col gap-4 px-5 pt-5 pb-12 md:px-8">
         <Card className="flex flex-col gap-3 p-4.5">
-          <span className="font-mono text-[10.5px] tracking-wider text-panel-muted uppercase">Hoy se puede reservar</span>
-          <p className="m-0 text-[15px] leading-normal">
-            Desde el <strong>{longDate(effective.from)}</strong> hasta el <strong>{longDate(effective.to)}</strong>
-            {blocked.filter((d) => d >= effective.from && d <= effective.to).length > 0 &&
-              `, salvo ${blocked.filter((d) => d >= effective.from && d <= effective.to).length} día(s) cerrado(s)`}
-            .
-          </p>
-          {usingDefault && (
-            <span className="text-[12.5px] text-panel-muted">
-              Es el valor por defecto (hoy más {DEFAULT_AHEAD_DAYS} días). Tocá dos días del calendario para fijar tu propio rango.
-            </span>
-          )}
-          {anchor && <span className="text-[12.5px] text-kraft">Elegí ahora el último día del rango.</span>}
+          <h2 className="m-0 font-display text-[clamp(28px,4vw,40px)] leading-[1.05] font-semibold uppercase">
+            Se puede reservar hasta los próximos {days} días
+          </h2>
           <div className="flex flex-wrap items-center gap-3">
             <Segmented
               value={mode}
-              onChange={(m) => {
-                setMode(m);
-                setAnchor(null);
-              }}
+              onChange={setMode}
               options={[
-                ["range", "Elegir el rango"],
+                ["range", "Elegir hasta qué día"],
                 ["block", "Cerrar días puntuales"],
               ]}
               className="w-full max-w-90"
@@ -159,13 +144,9 @@ export function BookingCalendar({ initial, today }: { initial: BookingConfig; to
               <AButton
                 variant="link"
                 className="text-[13px]"
-                onClick={() => {
-                  setFrom(null);
-                  setTo(null);
-                  setAnchor(null);
-                }}
+                onClick={() => setAhead(null)}
               >
-                Volver al rango por defecto
+                Volver al valor por defecto
               </AButton>
             )}
             {blocked.length > 0 && (
@@ -176,7 +157,7 @@ export function BookingCalendar({ initial, today }: { initial: BookingConfig; to
           </div>
           <span className="text-[12.5px] text-panel-muted">
             {mode === "range"
-              ? "Tocá el primer día y después el último. Los días anteriores a hoy no se pueden elegir."
+              ? "Tocá el último día que querés ofrecer: el rango siempre arranca hoy y se corre solo cada día."
               : "Tocá un día del rango para cerrarlo (feriados, eventos privados) o volver a abrirlo."}
           </span>
         </Card>
@@ -196,8 +177,8 @@ export function BookingCalendar({ initial, today }: { initial: BookingConfig; to
           </div>
         </Card>
         <p className="m-0 text-[12.5px] text-panel-muted">
-          Esto solo afecta las reservas online. Desde el panel siempre podés cargar reservas a mano en cualquier día. Para hoy, el sitio deja de
-          tomar reservas a las 19:30 y ofrece consultar por WhatsApp.
+          Esto solo afecta las reservas online. Los días que el local cierra por horario (ver Datos del local) se marcan solos como cerrados. Desde el panel siempre podés cargar reservas a mano en cualquier día. Para hoy, el sitio deja de
+          tomar reservas a la hora de apertura de ese día (ver Datos del local) y ofrece consultar por WhatsApp.
         </p>
       </div>
     </>

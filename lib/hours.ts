@@ -67,22 +67,37 @@ export function groupedWeek(week: DayHours[]): { days: string; closed: boolean; 
   });
 }
 
-/** Hora de apertura más temprana de los días abiertos y si es la misma todos los días. */
-function summary(week: DayHours[], pick: (d: DayHours) => string) {
+/**
+ * "desde las 19:30; domingos desde las 20:00": la hora que se repite más y, aparte, los días que arrancan distinto.
+ * `uniform` es true si todos los días (y ninguno cerrado) arrancan igual.
+ */
+function fromByDay(week: DayHours[], pick: (d: DayHours) => string) {
   const open = week.filter((d) => !d.closed);
-  const times = open.map(pick).sort();
-  return { min: times[0] ?? "19:30", uniform: open.length === 7 && new Set(times).size === 1 };
+  const times = [...new Set(open.map(pick))];
+  const count = (t: string) => open.filter((d) => pick(d) === t).length;
+  const main = [...times].sort((a, b) => count(b) - count(a) || a.localeCompare(b))[0] ?? "19:30";
+  const extras = times
+    .filter((t) => t !== main)
+    .sort()
+    .map((t) => {
+      const names = WEEK_ORDER.filter((d) => open.some((x) => x.day === d && pick(x) === t)).map((d) => DAY_NAMES[d].toLowerCase());
+      const plural = (n: string) => (n.endsWith("s") ? n : `${n}s`);
+      const label = names.length === 1 ? plural(names[0]) : `${names.slice(0, -1).map(plural).join(", ")} y ${plural(names[names.length - 1])}`;
+      return `${label} desde las ${t}`;
+    });
+  return { main, extras, uniform: open.length === 7 && extras.length === 0 };
 }
 
-/** "Todos los días desde las 19:30" (o "Desde las 19:30" si cambia según el día o hay días cerrados). */
+/** "Todos los días desde las 19:30" o, si cambia: "Desde las 19:30; domingos desde las 20:00". */
 export function openFromText(week: DayHours[]): string {
-  const s = summary(week, (d) => d.from);
-  return s.uniform ? `Todos los días desde las ${s.min}` : `Desde las ${s.min}`;
+  const s = fromByDay(week, (d) => d.from);
+  return s.uniform ? `Todos los días desde las ${s.main}` : [`Desde las ${s.main}`, ...s.extras].join("; ");
 }
 
-/** "desde las 19:30" para la intro de la carta. */
+/** "desde las 19:30; domingos desde las 20:00" para la intro de la carta. */
 export function ordersFromText(week: DayHours[]): string {
-  return `desde las ${summary(week, (d) => d.ordersFrom).min}`;
+  const s = fromByDay(week, (d) => d.ordersFrom);
+  return [`desde las ${s.main}`, ...s.extras].join("; ");
 }
 
 export type OrdersStatus = { ok: true } | { ok: false; reason: "closed" } | { ok: false; reason: "early"; from: string };
@@ -101,4 +116,20 @@ export function ordersBlockMessage(st: OrdersStatus): string | null {
   return st.reason === "closed"
     ? "Hoy no tomamos pedidos. Podés dejar armado el pedido y enviarlo otro día."
     : `Todavía no tomamos pedidos: empezamos a las ${st.from}. Podés ir armando el pedido y enviarlo a partir de esa hora.`;
+}
+
+/** Hora desde la que se reserva ese día: la de apertura de ese día de la semana (domingos 20:00, el resto 19:30 por defecto). */
+export function reservationTime(week: DayHours[], iso: string): string {
+  return week.find((d) => d.day === parts(iso).dow)?.from ?? "19:30";
+}
+
+/** "Desde las 19:30" para ese día. */
+export function reservationRange(week: DayHours[], iso: string): string {
+  return `Desde las ${reservationTime(week, iso)}`;
+}
+
+/** "Reservás desde las 19:30; domingos desde las 20:00." (si todos los días abren igual, solo la primera parte). */
+export function reservationFromText(week: DayHours[]): string {
+  const s = fromByDay(week, (d) => d.from);
+  return `Reservás ${[`desde las ${s.main}`, ...s.extras].join("; ")}.`;
 }

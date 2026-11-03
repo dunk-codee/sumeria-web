@@ -9,7 +9,7 @@ import { RedX } from "../XMark";
 
 const NAV = [
   { href: "/admin", label: "Inicio" },
-  { href: "/admin/reservas", label: "Reservas", badge: true },
+  { href: "/admin/reservas", label: "Reservas" },
   { href: "/admin/calendario", label: "Calendario de reservas" },
   { href: "/admin/productos", label: "Productos" },
   { href: "/admin/categorias", label: "Categorías" },
@@ -18,7 +18,7 @@ const NAV = [
   { href: "/admin/local", label: "Datos del local" },
 ] as const;
 
-export function SidebarNav({ email, pending }: { email: string; pending: number }) {
+export function SidebarNav({ email }: { email: string }) {
   const path = usePathname();
   const active = (href: string) => (href === "/admin" ? path === "/admin" : path.startsWith(href));
   return (
@@ -37,7 +37,6 @@ export function SidebarNav({ email, pending }: { email: string; pending: number 
       <nav className="no-scrollbar flex gap-0.5 overflow-x-auto px-2.5 pb-2 md:flex-1 md:flex-col md:overflow-y-auto md:py-3" aria-label="Panel">
         {NAV.map((n) => {
           const on = active(n.href);
-          const badge = "badge" in n && pending > 0;
           return (
             <Link
               key={n.href}
@@ -50,11 +49,6 @@ export function SidebarNav({ email, pending }: { email: string; pending: number 
             >
               <span className="hidden w-2.5 md:flex">{on && <RedX size={10} stroke={4} />}</span>
               <span className="md:flex-1">{n.label}</span>
-              {badge && (
-                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-sumeria-dark px-1.5 text-[11px] font-bold text-white" aria-label={`${pending} pendientes`}>
-                  {pending}
-                </span>
-              )}
             </Link>
           );
         })}

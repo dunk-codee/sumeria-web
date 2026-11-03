@@ -3,6 +3,7 @@
 import type { VariantProps } from "class-variance-authority";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ComponentProps, type ReactNode } from "react";
 import { CheckIcon } from "@/components/icons";
+import { maskTime, normalizeTime } from "@/lib/contact";
 import { cx } from "@/lib/format";
 import { abtn, inputCls, PANEL_TABLE, STATUS_LABEL, statusTag, type TagKind } from "./styles";
 
@@ -18,12 +19,31 @@ export function AButton({ variant, size, className, ...p }: ComponentProps<"butt
 /* ---------- Formularios ---------- */
 
 
-export function Field({ label, hint, children, className }: { label: ReactNode; hint?: ReactNode; children: ReactNode; className?: string }) {
+export function Field({
+  label,
+  hint,
+  error,
+  children,
+  className,
+}: {
+  label: ReactNode;
+  hint?: ReactNode;
+  /** Mensaje de validación: aparece debajo del campo, en rojo. */
+  error?: ReactNode;
+  children: ReactNode;
+  className?: string;
+}) {
   return (
     <label className={cx("flex flex-col gap-1.5", className)}>
       <span className="text-[13px] font-semibold text-sand">{label}</span>
       {children}
-      {hint && <span className="text-xs text-panel-muted">{hint}</span>}
+      {error ? (
+        <span role="alert" className="text-xs font-semibold text-sumeria-light">
+          {error}
+        </span>
+      ) : (
+        hint && <span className="text-xs text-panel-muted">{hint}</span>
+      )}
     </label>
   );
 }
@@ -118,7 +138,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const flash = useCallback((msg: string, tone: "ok" | "error" = "ok") => {
     clearTimeout(timer.current);
-    setToast({ msg, tone, k: Date.now() });
+    // Mismo mensaje seguido: no se vuelve a montar (no repite la animación de entrada), solo se extiende el tiempo.
+    setToast((cur) => (cur && cur.msg === msg && cur.tone === tone ? cur : { msg, tone, k: Date.now() }));
     timer.current = setTimeout(() => setToast(null), 2600);
   }, []);
   useEffect(() => () => clearTimeout(timer.current), []);
@@ -158,5 +179,138 @@ export function useRun() {
       }
     },
     [flash],
+  );
+}
+
+/* ---------- Modal de confirmación ---------- */
+
+/** Cuadro para confirmar una acción que no se deshace sola (cancelar una reserva, etc.). Enfoca "Volver" y cierra con Escape. */
+export function ConfirmModal({
+  open,
+  title,
+  body,
+  confirmLabel,
+  busy,
+  onConfirm,
+  onClose,
+}: {
+  open: boolean;
+  title: string;
+  body: ReactNode;
+  confirmLabel: string;
+  busy?: boolean;
+  onConfirm: () => void;
+  onClose: () => void;
+}) {
+  const back = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    back.current?.focus();
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4" onClick={onClose}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirm-title"
+        onClick={(e) => e.stopPropagation()}
+        className="flex w-full max-w-105 flex-col gap-4 rounded-md border border-bone/12 bg-panel-surface p-6 text-panel-text"
+      >
+        <h2 id="confirm-title" className="m-0 font-display text-2xl leading-tight font-semibold uppercase">
+          {title}
+        </h2>
+        <div className="text-sm leading-relaxed text-panel-soft">{body}</div>
+        <div className="flex flex-wrap justify-end gap-2">
+          <button ref={back} type="button" onClick={onClose} className={abtn({ variant: "outline" })}>
+            Volver
+          </button>
+          <button type="button" disabled={busy} onClick={onConfirm} className={abtn({ variant: "cancel" })}>
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Fecha en formato día/mes/año ---------- */
+
+/** "2026-11-03" → "03/11/2026". */
+export const dmy = (iso: string) => iso.split("-").reverse().join("/");
+
+/**
+ * Campo de fecha. El `<input type="date">` nativo muestra el formato del navegador (mes/día en EE. UU.), así que se muestra
+ * la fecha como día/mes/año y el calendario se abre con un toque. `value` vacío = sin fecha.
+ */
+export function DateField({
+  value,
+  onChange,
+  label,
+  invalid,
+  id,
+  placeholder = "dd/mm/aaaa",
+}: {
+  value: string;
+  onChange: (iso: string) => void;
+  label: string;
+  invalid?: boolean;
+  id?: string;
+  placeholder?: string;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  return (
+    <span className="relative inline-flex w-full">
+      <button
+        type="button"
+        id={id}
+        aria-label={`${label}: ${value ? dmy(value) : "sin fecha"}`}
+        aria-describedby={invalid ? `${id ?? "date"}-error` : undefined}
+        onClick={() => ref.current?.showPicker?.()}
+        className={cx(inputCls, "flex w-full items-center justify-between gap-2 px-2.5 text-left", invalid && "border-sumeria")}
+      >
+        <span className={cx("font-mono", !value && "text-stone-6")}>{value ? dmy(value) : placeholder}</span>
+        <span aria-hidden className="text-panel-muted">
+          ▾
+        </span>
+      </button>
+      <input ref={ref} type="date" value={value} tabIndex={-1} aria-hidden onChange={(e) => onChange(e.target.value)} className="pointer-events-none absolute inset-0 opacity-0" />
+    </span>
+  );
+}
+
+/* ---------- Hora HH:MM ---------- */
+
+/** Campo de hora: solo números, los ":" se ponen solos ("1930" → "19:30") y al salir completa ("9" → "09:00"). */
+export function TimeField({
+  value,
+  onChange,
+  label,
+  invalid,
+  disabled,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  label: string;
+  invalid?: boolean;
+  disabled?: boolean;
+}) {
+  return (
+    <input
+      value={value}
+      disabled={disabled}
+      inputMode="numeric"
+      autoComplete="off"
+      aria-label={label}
+      aria-invalid={invalid}
+      placeholder="HH:MM"
+      maxLength={5}
+      onChange={(e) => onChange(maskTime(e.target.value))}
+      onBlur={() => value && onChange(normalizeTime(value) ?? value)}
+      className={cx(inputCls, "h-9.5 text-center disabled:opacity-40", invalid && "border-sumeria")}
+    />
   );
 }

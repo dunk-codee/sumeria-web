@@ -4,6 +4,7 @@ import { isOffered, seatingOptions } from "@/lib/combos";
 import { getSettings } from "@/lib/data";
 import { dbConfigured, getDb, isUniqueViolation } from "@/lib/db";
 import { reservations, tables } from "@/lib/schema";
+import { reservationTime } from "@/lib/hours";
 import { TURN } from "@/lib/turns";
 import { reservationInput } from "@/lib/validation";
 
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
   const r = parsed.data;
 
   const settings = await getSettings();
-  const status = bookingStatus(r.date, settings.booking);
+  const status = bookingStatus(r.date, settings.booking, new Date(), settings.hours);
   if (status !== "ok") {
     return Response.json({ error: BOOKING_ERRORS[status], code: status }, { status: status === "cutoff" ? 422 : 400 });
   }
@@ -72,7 +73,7 @@ export async function POST(request: Request) {
           [...r.tables].sort((a, b) => a - b).map((tableN) => ({
             date: r.date,
             turn: TURN.id,
-            time: TURN.time,
+            time: reservationTime(settings.hours, r.date),
             name: r.name,
             phone: r.phone,
             people: r.people,

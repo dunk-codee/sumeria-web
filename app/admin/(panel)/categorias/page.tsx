@@ -13,7 +13,7 @@ export default async function CategoriasAdmin() {
   return (
     <>
       <PageHead kicker="Carta" title="Categorías" />
-      <CategoriesEditor key={rows.map((r) => `${r.id}:${r.name}`).join("|")} cats={rows} />
+      <CategoriesEditor cats={rows} />
     </>
   );
 }
