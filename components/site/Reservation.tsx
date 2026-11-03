@@ -7,7 +7,7 @@ import { bookingDays, isPastCutoff, type BookingConfig } from "@/lib/booking";
 import type { SeatingOption, SeatingTier } from "@/lib/combos";
 import { DOW, longDate, MON, parts, shortDate, todayISO } from "@/lib/dates";
 import { cx, plural, tablesLabel } from "@/lib/format";
-import { MAX_PEOPLE, SAME_DAY_CUTOFF, TURN } from "@/lib/turns";
+import { MAX_PEOPLE, SAME_DAY_CUTOFF, TOLERANCE_MIN, TURN } from "@/lib/turns";
 import { reservationRequestMessage, sameDayConsultMessage, waLink } from "@/lib/whatsapp";
 import { FloorPlan, type PlanGroup, type PlanTable } from "../FloorPlan";
 import { button } from "../ui";
@@ -427,7 +427,7 @@ export function Reservation({ plan, whatsapp, booking }: { plan: PlanData; whats
               <span className="font-display text-lg font-semibold uppercase">Turno único</span>
               <span className="font-mono text-xs text-stone-2">{TURN.range}</span>
             </div>
-            <span className="text-[13px] text-stone-3">Tu mesa queda guardada durante todo el servicio.</span>
+            <span className="text-[13px] text-stone-3">Tolerancia de {TOLERANCE_MIN} minutos: si llegás más tarde, la reserva se libera.</span>
           </div>
           <div className="flex flex-col gap-3">
             <h3 className={h3}>¿Cuántos son?</h3>
@@ -657,10 +657,18 @@ export function Reservation({ plan, whatsapp, booking }: { plan: PlanData; whats
                 </span>
               )}
               {cutoffNotice}
+              <div className="flex items-start gap-3 rounded-xs border-[1.5px] border-sumeria bg-alert-bg px-4 py-3.5" role="note">
+                <span aria-hidden className="font-display text-xl leading-none text-sumeria">!</span>
+                <span className="text-[15px] leading-snug font-semibold text-bone">
+                  Hay {TOLERANCE_MIN} minutos de tolerancia: si llegás más tarde, perdés la reserva y la mesa se libera.
+                </span>
+              </div>
               <button type="submit" disabled={sending || cutoff} className={cx(button({ variant: cutoff ? "disabled" : "primary" }), "py-4.25")}>
                 {sending ? "Enviando…" : cutoff ? "Reservas de hoy cerradas" : "Enviar reserva"}
               </button>
-              <span className="text-[13px] leading-normal text-stone-3">Al enviar, la reserva queda confirmada y te llevamos a WhatsApp con el mensaje listo para mandarnos.</span>
+              <span className="text-[13px] leading-normal text-stone-3">
+                Al enviar, la reserva queda confirmada y te llevamos a WhatsApp con el mensaje listo para mandarnos.
+              </span>
             </form>
             <div className="flex flex-col gap-3.5 rounded-xs border border-bone/14 bg-coal p-5.5">
               <span className="font-mono text-[10.5px] text-stone-3 uppercase">Resumen</span>
@@ -706,7 +714,7 @@ export function Reservation({ plan, whatsapp, booking }: { plan: PlanData; whats
               <dd className="m-0">{last.people}</dd>
             </dl>
             <span className="text-[13.5px] leading-normal text-stone-3">
-              Si no se abrió WhatsApp, tocá el botón para mandarnos el mensaje. Si necesitás cambiar algo, escribinos por ahí.
+              Recordá: hay {TOLERANCE_MIN} minutos de tolerancia para mantener la reserva. Si no se abrió WhatsApp, tocá el botón para mandarnos el mensaje. Si necesitás cambiar algo, escribinos por ahí.
             </span>
           </div>
           <div className="flex flex-wrap gap-2.5">

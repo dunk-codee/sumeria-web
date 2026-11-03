@@ -70,13 +70,20 @@ export function reservationConfirmMessage(r: {
   return `¡Hola ${first}! Te confirmamos la reserva en Sumeria para el ${DOW_LONG[p.dow]} ${p.day} a las ${r.time}, ${r.people} personas, ${mesa}. Te esperamos en ${r.address}. Si no podés venir, avisanos por acá.`;
 }
 
+/** Saludo del local a un cliente con reserva, para escribirle por WhatsApp desde el panel. */
+export function reservationContactMessage(r: { name: string; date: string; time: string }): string {
+  const p = parts(r.date);
+  const first = r.name.trim().split(/\s+/)[0] ?? r.name;
+  return `¡Hola ${first}! Te escribimos de Sumeria por tu reserva del ${DOW_LONG[p.dow]} ${p.day} a las ${r.time}.`;
+}
+
 /** Mensaje del cliente al local con la reserva que acaba de hacer en la web (ya confirmada en el panel). */
 export function reservationRequestMessage(r: {
   name: string;
   phone: string;
   /** "Lunes 26 de octubre" */
   dateLabel: string;
-  /** "20:00 a 23:00" */
+  /** "Desde las 19:30" */
   timeRange: string;
   people: number;
   /** "Mesa 3" o "Mesas 1 y 2". */
@@ -94,7 +101,7 @@ export function reservationRequestMessage(r: {
     `• Mesa: ${r.tableLabel}`,
   ];
   if (r.comment?.trim()) out.push(`• Comentario: ${r.comment.trim()}`);
-  out.push("", "¡Gracias, nos vemos!");
+  out.push("", "Entiendo que hay 30 minutos de tolerancia para mantener la reserva. ¡Gracias, nos vemos!");
   return out.join("\n");
 }
 

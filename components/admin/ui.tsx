@@ -2,6 +2,7 @@
 
 import type { VariantProps } from "class-variance-authority";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ComponentProps, type ReactNode } from "react";
+import { CheckIcon } from "@/components/icons";
 import { cx } from "@/lib/format";
 import { abtn, inputCls, PANEL_TABLE, STATUS_LABEL, statusTag, type TagKind } from "./styles";
 
@@ -88,7 +89,22 @@ export function Card({ className, children }: { className?: string; children: Re
 /* ---------- Estados de reserva ---------- */
 
 export function StatusTag({ status, label }: { status: TagKind; label?: string }) {
-  return <span className={statusTag({ status })}>{label ?? STATUS_LABEL[status]}</span>;
+  return (
+    <span className={cx(statusTag({ status }), status === "conf" && "inline-flex items-center gap-1")}>
+      {status === "conf" && <CheckIcon size={11} />}
+      {label ?? STATUS_LABEL[status]}
+    </span>
+  );
+}
+
+/** Marca de "Llegaron": sólida y con tick, para que se distinga de Confirmada. */
+export function ArrivedTag() {
+  return (
+    <span className="inline-flex items-center gap-1 rounded bg-kraft px-2 py-0.75 font-mono text-[10px] font-semibold whitespace-nowrap text-ink uppercase">
+      <CheckIcon size={11} />
+      Llegaron
+    </span>
+  );
 }
 
 

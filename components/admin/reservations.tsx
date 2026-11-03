@@ -12,7 +12,7 @@ import {
 import type { AdminReservation } from "@/lib/admin-data";
 import { longDate, todayISO } from "@/lib/dates";
 import { cx, tablesLabel } from "@/lib/format";
-import { reservationConfirmMessage, toWaNumber, waLink } from "@/lib/whatsapp";
+import { reservationConfirmMessage, reservationContactMessage, toWaNumber, waLink } from "@/lib/whatsapp";
 import { XMark } from "../XMark";
 import { AButton, abtn, Field, inputCls, Segmented, useRun } from "./ui";
 
@@ -33,6 +33,9 @@ export function useResActions(address: string) {
       }
       act(() => run(setReservationStatus(r.id, "conf"), `Reserva de ${r.name} confirmada. Se abrió WhatsApp con el mensaje.`));
     },
+    /** Abre WhatsApp con el número anotado y un saludo (sin cambiar el estado de la reserva). */
+    message: (r: AdminReservation) =>
+      window.open(waLink(toWaNumber(r.phone), reservationContactMessage({ name: r.name, date: r.date, time: r.time })), "_blank", "noopener"),
     reject: (r: AdminReservation) => act(() => run(setReservationStatus(r.id, "canc"), `Reserva de ${r.name} rechazada. La mesa vuelve a estar libre.`)),
     cancel: (r: AdminReservation) => act(() => run(setReservationStatus(r.id, "canc"), `Reserva de ${r.name} cancelada.`)),
     restore: (r: AdminReservation) => act(() => run(setReservationStatus(r.id, "pend"), `Reserva de ${r.name} restaurada como pendiente.`)),
@@ -42,6 +45,9 @@ export function useResActions(address: string) {
       act(() => run(setWalkin(date, n, on), on ? `Mesa ${n} marcada como ocupada.` : `Mesa ${n} liberada.`)),
   };
 }
+
+/** ¿La reserva tiene un teléfono al que se pueda escribir? (las "sin reserva" y las cargadas sin número no). */
+export const hasPhone = (r: AdminReservation) => r.status !== "occ" && r.phone.replace(/\D/g, "").length >= 7;
 
 type FreeTable = { n: number; capacity: number };
 

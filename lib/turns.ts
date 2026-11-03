@@ -6,9 +6,13 @@ export const TURN = {
   id: 0,
   name: "Reservas",
   /** Hora que se guarda en la reserva y se usa en el mensaje de confirmación. */
-  time: "20:00",
-  range: "20:00 a 23:00",
+  time: "19:30",
+  /** Solo se muestra la hora de inicio: no hay horario límite. */
+  range: "Desde las 19:30",
 } as const;
+
+/** Minutos de tardanza que se toleran antes de liberar la mesa. */
+export const TOLERANCE_MIN = 30;
 
 /** Personas máximas por reserva web (grupos más grandes, por WhatsApp). */
 export const MAX_PEOPLE = 8;
