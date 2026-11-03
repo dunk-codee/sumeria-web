@@ -11,7 +11,7 @@ import { TAGS } from "@/lib/data";
 import { DEFAULT_SETTINGS } from "@/lib/defaults";
 import { addDays, todayISO } from "@/lib/dates";
 import { getDb, isUniqueViolation } from "@/lib/db";
-import { TABLE_BOX } from "@/lib/plan";
+import { TABLE_BOX, TABLE_MAX, TABLE_MIN } from "@/lib/plan";
 import {
   categories,
   deliveryZones,
@@ -380,10 +380,11 @@ const planInput = z
     z.object({
       n: z.number().int().min(1).max(999),
       capacity: z.number().int().min(1).max(20),
-      // Se acepta por compatibilidad, pero siempre se guarda "square".
       shape: z.enum(TABLE_SHAPES).optional(),
       x: z.number().min(0).max(100),
       y: z.number().min(0).max(70),
+      w: z.number().min(TABLE_MIN).max(TABLE_MAX).optional(),
+      h: z.number().min(TABLE_MIN).max(TABLE_MAX).optional(),
       location: z.string().trim().max(60),
     }),
   )
@@ -418,16 +419,20 @@ export async function savePlan(input: z.input<typeof planInput>): Promise<Action
     await tx.delete(tables);
     if (list.length) {
       await tx.insert(tables).values(
-        // Todas las mesas son cuadradas y del mismo tamaño (ver `TABLE_SIZE`).
-        list.map((t) => ({
-          n: t.n,
-          capacity: t.capacity,
-          shape: "square" as const,
-          x: Math.max(0, Math.min(100 - TABLE_BOX.w, Math.round(t.x))),
-          y: Math.max(0, Math.min(70 - TABLE_BOX.h, Math.round(t.y))),
-          ...TABLE_BOX,
-          location: t.location || "Salón",
-        })),
+        list.map((t) => {
+          const w = Math.round(t.w ?? TABLE_BOX.w);
+          const h = Math.round(t.h ?? TABLE_BOX.h);
+          return {
+            n: t.n,
+            capacity: t.capacity,
+            shape: t.shape === "round" ? ("round" as const) : ("square" as const),
+            x: Math.max(0, Math.min(100 - w, Math.round(t.x))),
+            y: Math.max(0, Math.min(70 - h, Math.round(t.y))),
+            w,
+            h,
+            location: t.location || "Salón",
+          };
+        }),
       );
     }
   });

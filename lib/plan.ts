@@ -17,11 +17,13 @@ export function boxStyle(e: Box, portrait = false): CSSProperties {
 }
 
 /**
- * En el local todas las mesas son cuadradas y del mismo tamaño (pedido del cliente).
- * `w`/`h` siguen guardados en la base, pero siempre valen esto.
+ * Tamaño por defecto de una mesa nueva (cuadrada). Desde el panel se puede achicar, alargar o redondear
+ * (`TABLE_MIN`–`TABLE_MAX` unidades por lado).
  * Como el plano es 10:7 y y va de 0 a 70, 12 × 12 unidades se ve cuadrada en pantalla.
  */
 export const TABLE_SIZE = 12;
+export const TABLE_MIN = 6;
+export const TABLE_MAX = 30;
 export const TABLE_BOX = { w: TABLE_SIZE, h: TABLE_SIZE } as const;
 
 export const FIXTURE_CLASS: Record<FixtureKind, string> = {

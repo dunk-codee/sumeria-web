@@ -8,5 +8,5 @@ export const metadata: Metadata = { title: "Plano del local" };
 export default async function PlanoAdmin() {
   await requireAdmin();
   const [plan, upcoming] = await Promise.all([planTables(), tablesWithUpcoming()]);
-  return <PlanEditor key={plan.tables.map((t) => `${t.n}:${t.x}:${t.y}:${t.capacity}:${t.shape}`).join("|")} initial={plan} withUpcoming={upcoming} />;
+  return <PlanEditor key={plan.tables.map((t) => `${t.n}:${t.x}:${t.y}:${t.capacity}:${t.shape}:${t.w}:${t.h}`).join("|")} initial={plan} withUpcoming={upcoming} />;
 }
